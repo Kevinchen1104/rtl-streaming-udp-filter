@@ -1,0 +1,20 @@
+{
+  "status": "pass",
+  "command": [
+    "verilator",
+    "--lint-only",
+    "--Wall",
+    "--Wno-fatal",
+    "-DSYNTHESIS",
+    "-I.",
+    "--top-module",
+    "udp_packet_filter",
+    "rtl/stream_byte_buffer.sv",
+    "rtl/udp_packet_filter.sv"
+  ],
+  "exit_status": 0,
+  "tool_exit_status": 0,
+  "tool_version": "Verilator 5.048 2026-04-26 rev vUNKNOWN-built20260428",
+  "warning_count": 0,
+  "warnings": []
+}

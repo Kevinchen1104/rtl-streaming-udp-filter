@@ -1,0 +1,5 @@
+read_verilog -sv -I. -DSYNTHESIS rtl/stream_byte_buffer.sv rtl/udp_packet_filter.sv
+hierarchy -check -top udp_packet_filter
+synth -top udp_packet_filter
+check
+stat

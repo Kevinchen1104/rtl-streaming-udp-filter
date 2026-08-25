@@ -1,0 +1,18 @@
+{
+  "status": "pass",
+  "reference_model_pytest_cases": 81,
+  "rtl_pytest_entry_cases": 1,
+  "cocotb_test_coroutines": 4,
+  "directed_frames": 77,
+  "flow_control_scenarios": 8,
+  "reset_scenarios": 6,
+  "randomized_frames": 800,
+  "fixed_seeds": [
+    1,
+    7,
+    42,
+    2027
+  ],
+  "scenario_matrix_rows": 50,
+  "simulator": "Icarus Verilog version 12.0 (devel) (s20150603-1539-g2693dd32b)"
+}

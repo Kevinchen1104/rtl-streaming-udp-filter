@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rtl-streaming-udp-filter"
+version = "1.0.0"
+description = "RTL, reference model, and verification for a streaming Ethernet/IPv4/UDP filter"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["sim"]
+pythonpath = ["."]
+addopts = "-ra"

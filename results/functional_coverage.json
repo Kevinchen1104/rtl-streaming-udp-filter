@@ -1,0 +1,67 @@
+{
+  "source": "fixed-seed RTL randomized regression",
+  "total_frames": 800,
+  "bins": {
+    "reason": {
+      "ACCEPT": 75,
+      "NON_IPV4": 85,
+      "BAD_IPV4_HEADER": 91,
+      "NON_UDP": 86,
+      "FRAGMENTED": 75,
+      "BAD_LENGTH_OR_TRUNCATED": 87,
+      "DST_PORT_MISMATCH": 110,
+      "MSG_TYPE_MISMATCH": 102,
+      "FRAME_TOO_LONG": 89
+    },
+    "accepted_payload_size": {
+      "0": 18,
+      "8-63": 16,
+      "64-255": 11,
+      "1": 10,
+      "256+": 11,
+      "2-7": 9
+    },
+    "message_filter": {
+      "disabled": 373,
+      "enabled": 427
+    },
+    "port": {
+      "match": 690,
+      "mismatch": 110
+    },
+    "padding": {
+      "yes": 57,
+      "no": 743
+    },
+    "df": {
+      "1": 397,
+      "0": 403
+    },
+    "input_gaps": {
+      "yes": 419,
+      "no": 381
+    },
+    "output_backpressure": {
+      "no": 772,
+      "yes": 28
+    },
+    "result_backpressure": {
+      "no": 507,
+      "yes": 293
+    },
+    "truncation_region": {
+      "none": 713,
+      "udp": 12,
+      "ethernet": 17,
+      "ipv4": 26,
+      "first_payload": 15,
+      "later_payload": 17
+    },
+    "output_semantic": {
+      "no_output": 711,
+      "full_good_output": 57,
+      "partial_error_output": 32
+    }
+  },
+  "percentage_reported": false
+}

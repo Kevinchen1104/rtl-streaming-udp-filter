@@ -1,0 +1,6 @@
+Python: 3.12.13
+pytest: 8.4.1
+cocotb: 2.0.0
+Icarus: Icarus Verilog version 12.0 (devel) (s20150603-1539-g2693dd32b)
+Verilator: Verilator 5.048 2026-04-26 rev vUNKNOWN-built20260428
+Yosys: Yosys 0.56 (git sha1 9c447ad9d4b1ea589369364eea38b4d70da2c599, x86_64-w64-mingw32-g++ 16.1.0 -march=nocona -msahf -mtune=generic -O2 -fstack-protector-strong -O3)
