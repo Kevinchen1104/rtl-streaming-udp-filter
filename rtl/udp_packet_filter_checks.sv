@@ -1,5 +1,7 @@
 `timescale 1ns/1ps
-module udp_packet_filter_sva (
+// Simulation-time protocol checks. They are immediate assertions inside a
+// clocked block, because Icarus does not support concurrent assertions.
+module udp_packet_filter_checks (
     input logic        clk,
     input logic        rst_n,
     input logic [7:0]  m_axis_tdata,
@@ -18,6 +20,8 @@ module udp_packet_filter_sva (
     input logic [15:0] result_payload_len,
     input logic [31:0] result_sequence
 );
+    `include "udp_packet_filter_reason_codes.svh"
+
     logic       prior_out_stall;
     logic [9:0] prior_out_bundle;
     logic       prior_result_stall;
@@ -47,7 +51,7 @@ module udp_packet_filter_sva (
                     else $error("result fields changed while stalled");
             end
             if (result_valid) begin
-                assert (result_accept == (result_reason == 4'd0))
+                assert (result_accept == (result_reason == REASON_ACCEPT))
                     else $error("accept/reason invariant violated");
                 assert (!m_axis_tvalid)
                     else $error("descriptor visible while payload remains pending");

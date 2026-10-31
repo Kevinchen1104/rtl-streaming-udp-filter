@@ -216,7 +216,8 @@ The implementation uses the following states:
 - `ST_WAIT_OUTPUT`
 - `ST_RESULT_HOLD`
 
-Every byte index and payload counter advances only on an input handshake.
+The header byte counter and the payload counter advance only on an input
+handshake. The header counter stops after byte 41.
 
 ### Ethernet and IPv4
 

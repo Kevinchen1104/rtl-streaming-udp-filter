@@ -31,7 +31,7 @@ module udp_packet_filter #(
     output logic [15:0] result_payload_len,
     output logic [31:0] result_sequence
 );
-    `include "rtl/udp_packet_filter_reason_codes.svh"
+    `include "udp_packet_filter_reason_codes.svh"
 
     typedef enum logic [3:0] {
         ST_IDLE,
@@ -46,7 +46,7 @@ module udp_packet_filter #(
     } state_t;
 
     state_t state;
-    logic [15:0] byte_index;
+    logic [5:0]  header_index;
     logic [15:0] payload_received;
 
     logic [15:0] cfg_dst_port_q;
@@ -167,7 +167,7 @@ module udp_packet_filter #(
     always_ff @(posedge clk) begin
         if (!rst_n) begin
             state                   <= ST_IDLE;
-            byte_index              <= 16'd0;
+            header_index            <= 6'd0;
             payload_received        <= 16'd0;
             cfg_dst_port_q          <= 16'd0;
             cfg_msg_type_enable_q   <= 1'b0;
@@ -203,7 +203,7 @@ module udp_packet_filter #(
                         result_reason         <= REASON_ACCEPT;
                         result_accept         <= 1'b0;
                         frame_reason          <= REASON_ACCEPT;
-                        byte_index            <= 16'd1;
+                        header_index          <= 6'd1;
                         payload_received      <= 16'd0;
                         address_shift         <= 24'd0;
                         if (s_axis_tlast)
@@ -215,10 +215,10 @@ module udp_packet_filter #(
 
                 ST_ETH_HEADER: begin
                     if (input_handshake) begin
-                        byte_index <= byte_index + 16'd1;
-                        if (byte_index == 16'd12)
+                        header_index <= header_index + 6'd1;
+                        if (header_index == 6'd12)
                             field_hi <= s_axis_tdata;
-                        if (byte_index == 16'd13) begin
+                        if (header_index == 6'd13) begin
                             if ({field_hi, s_axis_tdata} != 16'h0800) begin
                                 if (s_axis_tlast)
                                     create_descriptor(REASON_NON_IPV4);
@@ -239,14 +239,14 @@ module udp_packet_filter #(
 
                 ST_IPV4_HEADER: begin
                     if (input_handshake) begin
-                        byte_index <= byte_index + 16'd1;
-                        if (s_axis_tlast && byte_index != 16'd14 &&
-                            byte_index != 16'd17 && byte_index != 16'd23 &&
-                            byte_index != 16'd33)
+                        header_index <= header_index + 6'd1;
+                        if (s_axis_tlast && header_index != 6'd14 &&
+                            header_index != 6'd17 && header_index != 6'd23 &&
+                            header_index != 6'd33)
                             create_descriptor(
                                 REASON_BAD_LENGTH_OR_TRUNCATED);
-                        case (byte_index)
-                            16'd14: begin
+                        case (header_index)
+                            6'd14: begin
                                 if (s_axis_tdata[7:4] != 4'd4 ||
                                     s_axis_tdata[3:0] != 4'd5) begin
                                     if (s_axis_tlast)
@@ -259,8 +259,8 @@ module udp_packet_filter #(
                                     create_descriptor(REASON_BAD_LENGTH_OR_TRUNCATED);
                                 end
                             end
-                            16'd16: field_hi <= s_axis_tdata;
-                            16'd17: begin
+                            6'd16: field_hi <= s_axis_tdata;
+                            6'd17: begin
                                 ip_total_length <= {field_hi, s_axis_tdata};
                                 if ((32'd14 + {16'd0, field_hi, s_axis_tdata})
                                     > MAX_LOGICAL_FRAME_BYTES) begin
@@ -274,10 +274,10 @@ module udp_packet_filter #(
                                     create_descriptor(REASON_BAD_LENGTH_OR_TRUNCATED);
                                 end
                             end
-                            16'd20: field_hi <= s_axis_tdata;
-                            16'd21: fragment_field <= {field_hi[5:0],
+                            6'd20: field_hi <= s_axis_tdata;
+                            6'd21: fragment_field <= {field_hi[5:0],
                                                        s_axis_tdata};
-                            16'd23: begin
+                            6'd23: begin
                                 if (s_axis_tdata != 8'd17) begin
                                     if (s_axis_tlast)
                                         create_descriptor(REASON_NON_UDP);
@@ -297,19 +297,19 @@ module udp_packet_filter #(
                                     create_descriptor(REASON_BAD_LENGTH_OR_TRUNCATED);
                                 end
                             end
-                            16'd26: address_shift <= {16'd0, s_axis_tdata};
-                            16'd27,
-                            16'd28: address_shift <= {address_shift[15:0],
+                            6'd26: address_shift <= {16'd0, s_axis_tdata};
+                            6'd27,
+                            6'd28: address_shift <= {address_shift[15:0],
                                                        s_axis_tdata};
-                            16'd29: begin
+                            6'd29: begin
                                 result_src_ip <= {address_shift, s_axis_tdata};
                                 address_shift <= 24'd0;
                             end
-                            16'd30: address_shift <= {16'd0, s_axis_tdata};
-                            16'd31,
-                            16'd32: address_shift <= {address_shift[15:0],
+                            6'd30: address_shift <= {16'd0, s_axis_tdata};
+                            6'd31,
+                            6'd32: address_shift <= {address_shift[15:0],
                                                        s_axis_tdata};
-                            16'd33: begin
+                            6'd33: begin
                                 result_dst_ip <= {address_shift, s_axis_tdata};
                                 address_shift <= 24'd0;
                                 if (s_axis_tlast)
@@ -325,18 +325,18 @@ module udp_packet_filter #(
 
                 ST_UDP_HEADER: begin
                     if (input_handshake) begin
-                        byte_index <= byte_index + 16'd1;
-                        if (s_axis_tlast && byte_index != 16'd41)
+                        header_index <= header_index + 6'd1;
+                        if (s_axis_tlast && header_index != 6'd41)
                             create_descriptor(
                                 REASON_BAD_LENGTH_OR_TRUNCATED);
-                        case (byte_index)
-                            16'd34: field_hi <= s_axis_tdata;
-                            16'd35: result_src_port <= {field_hi, s_axis_tdata};
-                            16'd36: field_hi <= s_axis_tdata;
-                            16'd37: result_dst_port <= {field_hi, s_axis_tdata};
-                            16'd38: field_hi <= s_axis_tdata;
-                            16'd39: udp_length <= {field_hi, s_axis_tdata};
-                            16'd41: begin
+                        case (header_index)
+                            6'd34: field_hi <= s_axis_tdata;
+                            6'd35: result_src_port <= {field_hi, s_axis_tdata};
+                            6'd36: field_hi <= s_axis_tdata;
+                            6'd37: result_dst_port <= {field_hi, s_axis_tdata};
+                            6'd38: field_hi <= s_axis_tdata;
+                            6'd39: udp_length <= {field_hi, s_axis_tdata};
+                            6'd41: begin
                                 if (ip_total_length < 16'd28 ||
                                     udp_length < 16'd8 ||
                                     udp_length != (ip_total_length - 16'd20)) begin
@@ -391,7 +391,6 @@ module udp_packet_filter #(
 
                 ST_FIRST_PAYLOAD: begin
                     if (input_handshake) begin
-                        byte_index <= byte_index + 16'd1;
                         payload_received <= 16'd1;
                         if (s_axis_tdata != cfg_msg_type_q) begin
                             // Mismatch: nothing was written to the buffer.
@@ -416,7 +415,6 @@ module udp_packet_filter #(
 
                 ST_PASS_PAYLOAD: begin
                     if (input_handshake) begin
-                        byte_index <= byte_index + 16'd1;
                         payload_received <= payload_received + 16'd1;
                         if (s_axis_tlast) begin
                             frame_reason <= close_reason(
@@ -432,7 +430,6 @@ module udp_packet_filter #(
 
                 ST_DRAIN: begin
                     if (input_handshake) begin
-                        byte_index <= byte_index + 16'd1;
                         // Keep counting a filter-rejected datagram so a late
                         // close is still reported as truncation.
                         if (payload_received != result_payload_len)
@@ -461,7 +458,15 @@ module udp_packet_filter #(
     end
 
 `ifndef SYNTHESIS
-    udp_packet_filter_sva protocol_checks (
+    // Simulation-only checks. MAX_LOGICAL_FRAME_BYTES is a policy limit, not
+    // a buffer size; below the header size every frame would be too long.
+    initial begin
+        // 42 = Ethernet (14) + IPv4 without options (20) + UDP (8).
+        if (MAX_LOGICAL_FRAME_BYTES < 42)
+            $fatal(1, "MAX_LOGICAL_FRAME_BYTES must be at least 42");
+    end
+
+    udp_packet_filter_checks protocol_checks (
         .clk, .rst_n,
         .m_axis_tdata, .m_axis_tvalid, .m_axis_tready,
         .m_axis_tlast, .m_axis_tuser_error,

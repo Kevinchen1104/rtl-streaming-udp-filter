@@ -65,7 +65,7 @@ def main() -> int:
         return 2
     arguments = [
         "--lint-only", "--Wall", "--Wno-fatal", "-DSYNTHESIS",
-        "-I.",
+        "-Irtl",
         "--top-module", "udp_packet_filter",
         "rtl/stream_byte_buffer.sv",
         "rtl/udp_packet_filter.sv",
