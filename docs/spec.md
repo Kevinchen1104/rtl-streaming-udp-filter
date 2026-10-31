@@ -165,33 +165,42 @@ design cannot recall bytes transferred before a late error is discovered.
 | 2 | `REASON_BAD_IPV4_HEADER` | Version is not 4 or IHL is not 5 |
 | 3 | `REASON_NON_UDP` | IPv4 protocol is not UDP |
 | 4 | `REASON_FRAGMENTED` | MF is set or fragment offset is nonzero |
-| 5 | `REASON_BAD_LENGTH_OR_TRUNCATED` | Invalid length relationship or premature close |
-| 6 | `REASON_DST_PORT_MISMATCH` | Structurally valid datagram, destination port differs |
-| 7 | `REASON_MSG_TYPE_MISMATCH` | Port matches, message filter fails or payload is empty |
+| 5 | `REASON_BAD_LENGTH_OR_TRUNCATED` | Inconsistent lengths, or the frame ends before the datagram does |
+| 6 | `REASON_DST_PORT_MISMATCH` | Complete datagram, destination port differs |
+| 7 | `REASON_MSG_TYPE_MISMATCH` | Port matches; message filter fails or payload is empty |
 | 8 | `REASON_FRAME_TOO_LONG` | Logical Ethernet+IPv4 length exceeds the parameter |
 
 `result_accept` is one exactly when the result reason is `REASON_ACCEPT`.
 
 ### Priority
 
-1. A premature close reports truncation unless an earlier complete field has
-   already caused a decisive drain state.
-2. A complete non-IPv4 EtherType is decisive.
-3. Bad version/IHL precedes later IPv4 eligibility checks.
-4. Logical maximum is checked when total length completes.
-5. At protocol byte 23, non-UDP precedes fragmented.
-6. Structural length checks precede destination and message filters.
-7. Destination-port mismatch precedes message mismatch.
-8. Early close on the first message byte precedes a same-byte message mismatch
-   when additional payload was declared.
-9. If a message mismatch is observed before a later premature close, the
-   mismatch remains decisive because the parser has already entered drain.
+The reason depends only on the bytes of the frame, not on where it ends
+relative to an internal decision. Checks run in this order, and the first one
+that fails sets the reason:
+
+1. EtherType (bytes 12-13) is `0x0800`, else `NON_IPV4`.
+2. Version is 4 and IHL is 5 (byte 14), else `BAD_IPV4_HEADER`.
+3. `14 + ip_total_length` (bytes 16-17) is within the parameter, else
+   `FRAME_TOO_LONG`.
+4. Protocol (byte 23) is 17, else `NON_UDP`.
+5. MF and fragment offset (bytes 20-21) are zero, else `FRAGMENTED`.
+6. The UDP header is complete (bytes 34-41), the length rules hold, and the
+   frame reaches the declared datagram end, else `BAD_LENGTH_OR_TRUNCATED`.
+7. Destination port matches, else `DST_PORT_MISMATCH`.
+8. With message filtering on, the payload is non-empty and its first byte
+   matches, else `MSG_TYPE_MISMATCH`.
+
+If the frame ends before the bytes a check needs, that check reports
+`BAD_LENGTH_OR_TRUNCATED`. Because eligibility checks come first, a frame
+already rejected as non-IPv4, non-UDP, and so on keeps that reason even when it
+is also short. A frame rejected by a filter is still reported as truncated if
+it ends before its declared datagram end.
 
 ### Metadata
 
 Source/destination IP addresses and ports contain only fully observed fields.
-Declared payload length is nonzero only after all structural length checks pass.
-It remains available for filter rejects and late truncation.
+Declared payload length is reported once the UDP header is complete and the
+length rules hold, including for filter rejects and truncated frames.
 
 ## 6. Parser behavior
 

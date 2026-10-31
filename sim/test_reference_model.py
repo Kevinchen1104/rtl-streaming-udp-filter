@@ -158,11 +158,30 @@ def test_first_byte_message_mismatch_plus_early_last_is_truncation() -> None:
     assert result.speculative_payload == b""
 
 
-def test_message_mismatch_remains_decisive_on_later_truncation() -> None:
+def test_message_mismatch_with_later_truncation_is_truncation() -> None:
     frame = build_frame(b"\x00rest")[:44]
     result = classify(frame, msg_type_enable=True)
-    assert result.reason is Reason.MSG_TYPE_MISMATCH
+    assert result.reason is Reason.BAD_LENGTH_OR_TRUNCATED
     assert result.speculative_payload == b""
+    assert not result.terminal_error
+
+
+def test_port_mismatch_with_later_truncation_is_truncation() -> None:
+    frame = build_frame(b"abcdef", fields=PacketFields(dst_port=0x1234))[:45]
+    result = classify(frame)
+    assert result.reason is Reason.BAD_LENGTH_OR_TRUNCATED
+    assert result.payload_len == 6
+    assert result.speculative_payload == b""
+
+
+def test_filter_reject_with_padding_is_not_truncation() -> None:
+    frame = build_frame(b"abc", fields=PacketFields(dst_port=0x1234), padding=b"\0" * 8)
+    assert classify(frame).reason is Reason.DST_PORT_MISMATCH
+
+
+def test_eligibility_reject_wins_over_short_datagram() -> None:
+    frame = build_frame(b"abcdef", fields=PacketFields(protocol=6))[:30]
+    assert classify(frame).reason is Reason.NON_UDP
 
 
 def test_complete_message_mismatch_emits_nothing() -> None:

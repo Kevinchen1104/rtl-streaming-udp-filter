@@ -140,6 +140,20 @@ module udp_packet_filter #(
         end
     endtask
 
+    // A frame that closes before its declared datagram end is truncated,
+    // whatever reason was pending. received counts payload bytes including
+    // the closing byte. Eligibility rejects never set result_payload_len, so
+    // they keep their reason.
+    function automatic logic [3:0] close_reason(
+        input logic [3:0]  pending_reason,
+        input logic [15:0] received
+    );
+        if (received < result_payload_len)
+            close_reason = REASON_BAD_LENGTH_OR_TRUNCATED;
+        else
+            close_reason = pending_reason;
+    endfunction
+
     task automatic close_or_wait(input logic [3:0] final_reason);
         begin
             frame_reason <= final_reason;
@@ -379,21 +393,17 @@ module udp_packet_filter #(
                     if (input_handshake) begin
                         byte_index <= byte_index + 16'd1;
                         payload_received <= 16'd1;
-                        if (s_axis_tlast && result_payload_len > 16'd1) begin
-                            frame_reason <= REASON_BAD_LENGTH_OR_TRUNCATED;
-                            if (s_axis_tdata == cfg_msg_type_q)
-                                state <= ST_WAIT_OUTPUT;
-                            else
-                                create_descriptor(
-                                    REASON_BAD_LENGTH_OR_TRUNCATED);
-                        end else if (s_axis_tdata != cfg_msg_type_q) begin
-                            frame_reason <= REASON_MSG_TYPE_MISMATCH;
+                        if (s_axis_tdata != cfg_msg_type_q) begin
+                            // Mismatch: nothing was written to the buffer.
                             if (s_axis_tlast)
-                                create_descriptor(REASON_MSG_TYPE_MISMATCH);
-                            else
+                                create_descriptor(close_reason(
+                                    REASON_MSG_TYPE_MISMATCH, 16'd1));
+                            else begin
+                                frame_reason <= REASON_MSG_TYPE_MISMATCH;
                                 state <= ST_DRAIN;
+                            end
                         end else if (s_axis_tlast) begin
-                            frame_reason <= REASON_ACCEPT;
+                            frame_reason <= close_reason(REASON_ACCEPT, 16'd1);
                             state <= ST_WAIT_OUTPUT;
                         end else if (result_payload_len == 16'd1) begin
                             frame_reason <= REASON_ACCEPT;
@@ -409,12 +419,8 @@ module udp_packet_filter #(
                         byte_index <= byte_index + 16'd1;
                         payload_received <= payload_received + 16'd1;
                         if (s_axis_tlast) begin
-                            if ((payload_received + 16'd1)
-                                < result_payload_len)
-                                frame_reason <=
-                                    REASON_BAD_LENGTH_OR_TRUNCATED;
-                            else
-                                frame_reason <= REASON_ACCEPT;
+                            frame_reason <= close_reason(
+                                REASON_ACCEPT, payload_received + 16'd1);
                             state <= ST_WAIT_OUTPUT;
                         end else if ((payload_received + 16'd1)
                                      == result_payload_len) begin
@@ -427,8 +433,13 @@ module udp_packet_filter #(
                 ST_DRAIN: begin
                     if (input_handshake) begin
                         byte_index <= byte_index + 16'd1;
+                        // Keep counting a filter-rejected datagram so a late
+                        // close is still reported as truncation.
+                        if (payload_received != result_payload_len)
+                            payload_received <= payload_received + 16'd1;
                         if (s_axis_tlast)
-                            close_or_wait(frame_reason);
+                            close_or_wait(close_reason(
+                                frame_reason, payload_received + 16'd1));
                     end
                 end
 

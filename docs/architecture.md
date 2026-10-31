@@ -57,22 +57,21 @@ byte 0 is Ethernet offset 42: 14 Ethernet + 20 IPv4 + 8 UDP bytes.
 
 ## Length and reason ordering
 
-The implemented resolution of the specification is:
+The parser evaluates each check as soon as its field completes:
 
-1. a complete non-IPv4 EtherType is decisive;
-2. a complete bad version/IHL is decisive;
-3. the logical maximum is decisive as soon as `ip_total_length` completes at
-   byte 17;
-4. fragmentation is latched at byte 21 and evaluated at protocol byte 23, so
-   `NON_UDP` takes priority over `FRAGMENTED`;
-5. a supported candidate must reach the complete UDP header before IP/UDP
-   length checks, port filtering, and message filtering;
-6. a premature frame close is truncation unless an earlier complete field has
-   already put the parser in drain.
+- EtherType at byte 13, version/IHL at byte 14, and the logical maximum at
+  byte 17. A failure moves to drain with that reason.
+- Fragmentation is latched at byte 21 and evaluated together with protocol at
+  byte 23, so `NON_UDP` takes priority over `FRAGMENTED`.
+- Length rules and the destination port are evaluated at byte 41, the last
+  UDP header byte.
 
-A fragmented frame that closes before protocol byte 23 is truncated because
-the required IPv4 header did not complete and the parser had not yet applied
-the latched fragmentation reject.
+Eligibility rejects leave `result_payload_len` at zero. After byte 41, the
+parser counts payload bytes in every state, including drain after a port or
+message reject. When `tlast` arrives, a count below the declared payload length
+turns the pending reason into `BAD_LENGTH_OR_TRUNCATED` (the `close_reason`
+function). This makes the result match the whole-frame priority order in the
+specification without special same-byte cases.
 
 ## Payload and backpressure
 
