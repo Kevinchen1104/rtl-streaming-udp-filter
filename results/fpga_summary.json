@@ -1,0 +1,72 @@
+{
+  "status": "pass",
+  "problems": [],
+  "tool_versions": {
+    "yosys": "Yosys 0.69+173 (git sha1 53f1cdd34-dirty, Release, Clang /usr/bin/clang++ 21.1.8)",
+    "nextpnr-ecp5": "nextpnr-0.11.1-40-geb4f15c3"
+  },
+  "ecp5": {
+    "device": "LFE5U-25F",
+    "package": "CABGA381",
+    "speed_grade": 6,
+    "out_of_context": true,
+    "target_mhz": 125,
+    "fmax_min_mhz": 126.1,
+    "fmax_max_mhz": 132.3,
+    "runs": [
+      {
+        "seed": 1,
+        "fmax_mhz": 126.4,
+        "logic_cells": 1019,
+        "logic_cells_available": 24288,
+        "FF": 346,
+        "FF_available": 24288
+      },
+      {
+        "seed": 2,
+        "fmax_mhz": 129.3,
+        "logic_cells": 1019,
+        "logic_cells_available": 24288,
+        "FF": 346,
+        "FF_available": 24288
+      },
+      {
+        "seed": 3,
+        "fmax_mhz": 132.3,
+        "logic_cells": 1019,
+        "logic_cells_available": 24288,
+        "FF": 346,
+        "FF_available": 24288
+      },
+      {
+        "seed": 4,
+        "fmax_mhz": 126.1,
+        "logic_cells": 1019,
+        "logic_cells_available": 24288,
+        "FF": 346,
+        "FF_available": 24288
+      },
+      {
+        "seed": 5,
+        "fmax_mhz": 130.7,
+        "logic_cells": 1019,
+        "logic_cells_available": 24288,
+        "FF": 346,
+        "FF_available": 24288
+      }
+    ]
+  },
+  "xilinx_7series_estimate": {
+    "cells": {
+      "LUT": 571,
+      "FF": 346,
+      "CARRY4": 27,
+      "MUXF7/F8": 0,
+      "BRAM/DSP": 0
+    },
+    "xc7a35t_percent": {
+      "LUT": 2.7,
+      "FF": 0.8
+    }
+  }
+}

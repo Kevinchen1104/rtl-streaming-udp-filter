@@ -1,69 +1,84 @@
-# Measured simulation latency
+# Latency and throughput (simulation)
 
-cycle 0 is the first monitored rising-edge transfer opportunity for each frame; all listed handshakes use pre-edge ready/valid values
+Cycle 0 is the first rising edge at which the frame's first byte can transfer. Handshakes are counted at the rising edge where valid and ready are both high.
 
-- First payload output-valid latency: `1` cycle(s) after its input handshake.
-- No-stall sustained payload throughput: one byte every `1` cycle(s).
-- Fixed periodic output backpressure added `31` cycles through result handshake versus the same no-stall frame.
+| Measurement | Cycles |
+|---|---:|
+| First payload byte: input handshake to output valid | 1 |
+| Payload throughput with no stalls | 1 per byte |
+| Last input byte to descriptor valid (6-byte payload) | 2 |
 
-## Scenario event cycles
+## Gap between back-to-back frames
 
-### Port Only Accepted
+8 frames (645 bytes) sent with `s_axis_tvalid` held high and both sinks always ready took 655 cycles. Input stall cycles after each kind of frame:
 
-- `first_input_handshake_cycle`: `0`
-- `udp_header_final_handshake_cycle`: `41`
-- `first_payload_input_handshake_cycle`: `42`
-- `first_payload_output_valid_cycle`: `43`
-- `first_payload_output_handshake_cycle`: `43`
-- `final_payload_output_handshake_cycle`: `48`
-- `input_frame_closing_handshake_cycle`: `47`
-- `result_valid_cycle`: `49`
-- `result_handshake_cycle`: `49`
+| Frame | Stall cycles before the next frame |
+|---|---:|
+| accepted payload | 2 |
+| accepted zero payload | 1 |
+| accepted with padding | 1 |
+| port mismatch | 1 |
+| non ipv4 | 1 |
+| late truncation | 2 |
 
-### Message Filter Accepted
+## Event cycles per scenario
 
-- `first_input_handshake_cycle`: `0`
-- `udp_header_final_handshake_cycle`: `41`
-- `first_payload_input_handshake_cycle`: `42`
-- `first_payload_output_valid_cycle`: `43`
-- `first_payload_output_handshake_cycle`: `43`
-- `final_payload_output_handshake_cycle`: `48`
-- `input_frame_closing_handshake_cycle`: `47`
-- `result_valid_cycle`: `49`
-- `result_handshake_cycle`: `49`
+### multi byte
 
-### Port Mismatch
+- `first_input_handshake_cycle`: 0
+- `udp_header_final_handshake_cycle`: 41
+- `first_payload_input_handshake_cycle`: 42
+- `first_payload_output_valid_cycle`: 43
+- `first_payload_output_handshake_cycle`: 43
+- `final_payload_output_handshake_cycle`: 48
+- `input_frame_closing_handshake_cycle`: 47
+- `result_valid_cycle`: 49
+- `result_handshake_cycle`: 49
 
-- `first_input_handshake_cycle`: `0`
-- `udp_header_final_handshake_cycle`: `41`
-- `first_payload_input_handshake_cycle`: `42`
-- `first_payload_output_valid_cycle`: `None`
-- `first_payload_output_handshake_cycle`: `None`
-- `final_payload_output_handshake_cycle`: `None`
-- `input_frame_closing_handshake_cycle`: `44`
-- `result_valid_cycle`: `45`
-- `result_handshake_cycle`: `45`
+### msg multi
 
-### Message Mismatch
+- `first_input_handshake_cycle`: 0
+- `udp_header_final_handshake_cycle`: 41
+- `first_payload_input_handshake_cycle`: 42
+- `first_payload_output_valid_cycle`: 43
+- `first_payload_output_handshake_cycle`: 43
+- `final_payload_output_handshake_cycle`: 48
+- `input_frame_closing_handshake_cycle`: 47
+- `result_valid_cycle`: 49
+- `result_handshake_cycle`: 49
 
-- `first_input_handshake_cycle`: `0`
-- `udp_header_final_handshake_cycle`: `41`
-- `first_payload_input_handshake_cycle`: `42`
-- `first_payload_output_valid_cycle`: `None`
-- `first_payload_output_handshake_cycle`: `None`
-- `final_payload_output_handshake_cycle`: `None`
-- `input_frame_closing_handshake_cycle`: `45`
-- `result_valid_cycle`: `46`
-- `result_handshake_cycle`: `46`
+### port mismatch
 
-### Late Truncation
+- `first_input_handshake_cycle`: 0
+- `udp_header_final_handshake_cycle`: 41
+- `first_payload_input_handshake_cycle`: 42
+- `first_payload_output_valid_cycle`: None
+- `first_payload_output_handshake_cycle`: None
+- `final_payload_output_handshake_cycle`: None
+- `input_frame_closing_handshake_cycle`: 44
+- `result_valid_cycle`: 45
+- `result_handshake_cycle`: 45
 
-- `first_input_handshake_cycle`: `0`
-- `udp_header_final_handshake_cycle`: `41`
-- `first_payload_input_handshake_cycle`: `42`
-- `first_payload_output_valid_cycle`: `43`
-- `first_payload_output_handshake_cycle`: `43`
-- `final_payload_output_handshake_cycle`: `44`
-- `input_frame_closing_handshake_cycle`: `43`
-- `result_valid_cycle`: `45`
-- `result_handshake_cycle`: `45`
+### message mismatch
+
+- `first_input_handshake_cycle`: 0
+- `udp_header_final_handshake_cycle`: 41
+- `first_payload_input_handshake_cycle`: 42
+- `first_payload_output_valid_cycle`: None
+- `first_payload_output_handshake_cycle`: None
+- `final_payload_output_handshake_cycle`: None
+- `input_frame_closing_handshake_cycle`: 45
+- `result_valid_cycle`: 46
+- `result_handshake_cycle`: 46
+
+### late middle
+
+- `first_input_handshake_cycle`: 0
+- `udp_header_final_handshake_cycle`: 41
+- `first_payload_input_handshake_cycle`: 42
+- `first_payload_output_valid_cycle`: 43
+- `first_payload_output_handshake_cycle`: 43
+- `final_payload_output_handshake_cycle`: 44
+- `input_frame_closing_handshake_cycle`: 43
+- `result_valid_cycle`: 45
+- `result_handshake_cycle`: 45

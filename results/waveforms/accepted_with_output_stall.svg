@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="744" height="432" viewBox="0 0 744 432" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">
+<rect width="744" height="432" fill="#ffffff"/>
+<text x="12" y="20" font-size="13" font-weight="bold" fill="#1f2328">Accepted frame, 6-byte payload, output stalled for 2 cycles</text>
+<line x1="160" y1="38" x2="160" y2="382" stroke="#eaeef2"/>
+<text x="182.0" y="34" text-anchor="middle" fill="#8c959f" font-size="10">39</text>
+<line x1="204" y1="38" x2="204" y2="382" stroke="#eaeef2"/>
+<text x="226.0" y="34" text-anchor="middle" fill="#8c959f" font-size="10">40</text>
+<line x1="248" y1="38" x2="248" y2="382" stroke="#eaeef2"/>
+<text x="270.0" y="34" text-anchor="middle" fill="#8c959f" font-size="10">41</text>
+<line x1="292" y1="38" x2="292" y2="382" stroke="#eaeef2"/>
+<text x="314.0" y="34" text-anchor="middle" fill="#8c959f" font-size="10">42</text>
+<line x1="336" y1="38" x2="336" y2="382" stroke="#eaeef2"/>
+<text x="358.0" y="34" text-anchor="middle" fill="#8c959f" font-size="10">43</text>
+<line x1="380" y1="38" x2="380" y2="382" stroke="#eaeef2"/>
+<text x="402.0" y="34" text-anchor="middle" fill="#8c959f" font-size="10">44</text>
+<line x1="424" y1="38" x2="424" y2="382" stroke="#eaeef2"/>
+<text x="446.0" y="34" text-anchor="middle" fill="#8c959f" font-size="10">45</text>
+<line x1="468" y1="38" x2="468" y2="382" stroke="#eaeef2"/>
+<text x="490.0" y="34" text-anchor="middle" fill="#8c959f" font-size="10">46</text>
+<line x1="512" y1="38" x2="512" y2="382" stroke="#eaeef2"/>
+<text x="534.0" y="34" text-anchor="middle" fill="#8c959f" font-size="10">47</text>
+<line x1="556" y1="38" x2="556" y2="382" stroke="#eaeef2"/>
+<text x="578.0" y="34" text-anchor="middle" fill="#8c959f" font-size="10">48</text>
+<line x1="600" y1="38" x2="600" y2="382" stroke="#eaeef2"/>
+<text x="622.0" y="34" text-anchor="middle" fill="#8c959f" font-size="10">49</text>
+<line x1="644" y1="38" x2="644" y2="382" stroke="#eaeef2"/>
+<text x="666.0" y="34" text-anchor="middle" fill="#8c959f" font-size="10">50</text>
+<line x1="688" y1="38" x2="688" y2="382" stroke="#eaeef2"/>
+<text x="710.0" y="34" text-anchor="middle" fill="#8c959f" font-size="10">51</text>
+<line x1="732" y1="38" x2="732" y2="382" stroke="#eaeef2"/>
+<text x="12" y="61.0" fill="#1f2328">clk</text>
+<path d="M160,64.0 L160,50.0 L182.0,50.0 L182.0,64.0 L204,64.0 M204,64.0 L204,50.0 L226.0,50.0 L226.0,64.0 L248,64.0 M248,64.0 L248,50.0 L270.0,50.0 L270.0,64.0 L292,64.0 M292,64.0 L292,50.0 L314.0,50.0 L314.0,64.0 L336,64.0 M336,64.0 L336,50.0 L358.0,50.0 L358.0,64.0 L380,64.0 M380,64.0 L380,50.0 L402.0,50.0 L402.0,64.0 L424,64.0 M424,64.0 L424,50.0 L446.0,50.0 L446.0,64.0 L468,64.0 M468,64.0 L468,50.0 L490.0,50.0 L490.0,64.0 L512,64.0 M512,64.0 L512,50.0 L534.0,50.0 L534.0,64.0 L556,64.0 M556,64.0 L556,50.0 L578.0,50.0 L578.0,64.0 L600,64.0 M600,64.0 L600,50.0 L622.0,50.0 L622.0,64.0 L644,64.0 M644,64.0 L644,50.0 L666.0,50.0 L666.0,64.0 L688,64.0 M688,64.0 L688,50.0 L710.0,50.0 L710.0,64.0 L732,64.0" fill="none" stroke="#1f2328"/>
+<text x="12" y="87.0" fill="#1f2328">s_axis_tvalid</text>
+<polyline points="160,76.0 204,76.0 204,76.0 248,76.0 248,76.0 292,76.0 292,76.0 336,76.0 336,76.0 380,76.0 380,76.0 424,76.0 424,76.0 468,76.0 468,76.0 512,76.0 512,76.0 556,76.0 556,76.0 600,76.0 600,76.0 644,76.0 644,90.0 688,90.0 688,90.0 732,90.0" fill="none" stroke="#1f2328" stroke-width="1.5"/>
+<text x="12" y="113.0" fill="#1f2328">s_axis_tready</text>
+<polyline points="160,102.0 204,102.0 204,102.0 248,102.0 248,102.0 292,102.0 292,102.0 336,102.0 336,102.0 380,102.0 380,102.0 424,102.0 424,116.0 468,116.0 468,116.0 512,116.0 512,102.0 556,102.0 556,102.0 600,102.0 600,102.0 644,102.0 644,116.0 688,116.0 688,116.0 732,116.0" fill="none" stroke="#1f2328" stroke-width="1.5"/>
+<text x="12" y="139.0" fill="#1f2328">s_axis_tdata</text>
+<polygon points="163,135.0 166,128.0 198,128.0 201,135.0 198,142.0 166,142.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="182.0" y="139.0" text-anchor="middle" fill="#1f2328" font-size="10">0E</text>
+<polygon points="207,135.0 210,128.0 242,128.0 245,135.0 242,142.0 210,142.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="226.0" y="139.0" text-anchor="middle" fill="#1f2328" font-size="10">00</text>
+<polygon points="251,135.0 254,128.0 286,128.0 289,135.0 286,142.0 254,142.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="270.0" y="139.0" text-anchor="middle" fill="#1f2328" font-size="10">00</text>
+<polygon points="295,135.0 298,128.0 330,128.0 333,135.0 330,142.0 298,142.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="314.0" y="139.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;a&#x27;</text>
+<polygon points="339,135.0 342,128.0 374,128.0 377,135.0 374,142.0 342,142.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="358.0" y="139.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;b&#x27;</text>
+<polygon points="383,135.0 386,128.0 418,128.0 421,135.0 418,142.0 386,142.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="402.0" y="139.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;c&#x27;</text>
+<polygon points="427,135.0 430,128.0 462,128.0 465,135.0 462,142.0 430,142.0" fill="#fbe5b5" stroke="#1f2328"/>
+<text x="446.0" y="139.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;d&#x27;</text>
+<polygon points="471,135.0 474,128.0 506,128.0 509,135.0 506,142.0 474,142.0" fill="#fbe5b5" stroke="#1f2328"/>
+<text x="490.0" y="139.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;d&#x27;</text>
+<polygon points="515,135.0 518,128.0 550,128.0 553,135.0 550,142.0 518,142.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="534.0" y="139.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;d&#x27;</text>
+<polygon points="559,135.0 562,128.0 594,128.0 597,135.0 594,142.0 562,142.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="578.0" y="139.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;e&#x27;</text>
+<polygon points="603,135.0 606,128.0 638,128.0 641,135.0 638,142.0 606,142.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="622.0" y="139.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;f&#x27;</text>
+<line x1="644" y1="135.0" x2="688" y2="135.0" stroke="#8c959f"/>
+<line x1="688" y1="135.0" x2="732" y2="135.0" stroke="#8c959f"/>
+<text x="12" y="165.0" fill="#1f2328">s_axis_tlast</text>
+<polyline points="160,168.0 204,168.0 204,168.0 248,168.0 248,168.0 292,168.0 292,168.0 336,168.0 336,168.0 380,168.0 380,168.0 424,168.0 424,168.0 468,168.0 468,168.0 512,168.0 512,168.0 556,168.0 556,168.0 600,168.0 600,154.0 644,154.0 644,168.0 688,168.0 688,168.0 732,168.0" fill="none" stroke="#1f2328" stroke-width="1.5"/>
+<text x="12" y="191.0" fill="#1f2328">m_axis_tvalid</text>
+<polyline points="160,194.0 204,194.0 204,194.0 248,194.0 248,194.0 292,194.0 292,194.0 336,194.0 336,180.0 380,180.0 380,180.0 424,180.0 424,180.0 468,180.0 468,180.0 512,180.0 512,180.0 556,180.0 556,180.0 600,180.0 600,180.0 644,180.0 644,180.0 688,180.0 688,194.0 732,194.0" fill="none" stroke="#1f2328" stroke-width="1.5"/>
+<text x="12" y="217.0" fill="#1f2328">m_axis_tready</text>
+<polyline points="160,206.0 204,206.0 204,206.0 248,206.0 248,206.0 292,206.0 292,206.0 336,206.0 336,206.0 380,206.0 380,220.0 424,220.0 424,220.0 468,220.0 468,206.0 512,206.0 512,206.0 556,206.0 556,206.0 600,206.0 600,206.0 644,206.0 644,206.0 688,206.0 688,206.0 732,206.0" fill="none" stroke="#1f2328" stroke-width="1.5"/>
+<text x="12" y="243.0" fill="#1f2328">m_axis_tdata</text>
+<line x1="160" y1="239.0" x2="204" y2="239.0" stroke="#8c959f"/>
+<line x1="204" y1="239.0" x2="248" y2="239.0" stroke="#8c959f"/>
+<line x1="248" y1="239.0" x2="292" y2="239.0" stroke="#8c959f"/>
+<line x1="292" y1="239.0" x2="336" y2="239.0" stroke="#8c959f"/>
+<polygon points="339,239.0 342,232.0 374,232.0 377,239.0 374,246.0 342,246.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="358.0" y="243.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;a&#x27;</text>
+<polygon points="383,239.0 386,232.0 418,232.0 421,239.0 418,246.0 386,246.0" fill="#fbe5b5" stroke="#1f2328"/>
+<text x="402.0" y="243.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;b&#x27;</text>
+<polygon points="427,239.0 430,232.0 462,232.0 465,239.0 462,246.0 430,246.0" fill="#fbe5b5" stroke="#1f2328"/>
+<text x="446.0" y="243.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;b&#x27;</text>
+<polygon points="471,239.0 474,232.0 506,232.0 509,239.0 506,246.0 474,246.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="490.0" y="243.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;b&#x27;</text>
+<polygon points="515,239.0 518,232.0 550,232.0 553,239.0 550,246.0 518,246.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="534.0" y="243.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;c&#x27;</text>
+<polygon points="559,239.0 562,232.0 594,232.0 597,239.0 594,246.0 562,246.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="578.0" y="243.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;d&#x27;</text>
+<polygon points="603,239.0 606,232.0 638,232.0 641,239.0 638,246.0 606,246.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="622.0" y="243.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;e&#x27;</text>
+<polygon points="647,239.0 650,232.0 682,232.0 685,239.0 682,246.0 650,246.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="666.0" y="243.0" text-anchor="middle" fill="#1f2328" font-size="10">&#x27;f&#x27;</text>
+<line x1="688" y1="239.0" x2="732" y2="239.0" stroke="#8c959f"/>
+<text x="12" y="269.0" fill="#1f2328">m_axis_tlast</text>
+<polyline points="160,272.0 204,272.0 204,272.0 248,272.0 248,272.0 292,272.0 292,272.0 336,272.0 336,272.0 380,272.0 380,272.0 424,272.0 424,272.0 468,272.0 468,272.0 512,272.0 512,272.0 556,272.0 556,272.0 600,272.0 600,272.0 644,272.0 644,258.0 688,258.0 688,258.0 732,258.0" fill="none" stroke="#1f2328" stroke-width="1.5"/>
+<text x="12" y="295.0" fill="#1f2328">m_axis_tuser_error</text>
+<polyline points="160,298.0 204,298.0 204,298.0 248,298.0 248,298.0 292,298.0 292,298.0 336,298.0 336,298.0 380,298.0 380,298.0 424,298.0 424,298.0 468,298.0 468,298.0 512,298.0 512,298.0 556,298.0 556,298.0 600,298.0 600,298.0 644,298.0 644,298.0 688,298.0 688,298.0 732,298.0" fill="none" stroke="#1f2328" stroke-width="1.5"/>
+<text x="12" y="321.0" fill="#1f2328">result_valid</text>
+<polyline points="160,324.0 204,324.0 204,324.0 248,324.0 248,324.0 292,324.0 292,324.0 336,324.0 336,324.0 380,324.0 380,324.0 424,324.0 424,324.0 468,324.0 468,324.0 512,324.0 512,324.0 556,324.0 556,324.0 600,324.0 600,324.0 644,324.0 644,324.0 688,324.0 688,310.0 732,310.0" fill="none" stroke="#1f2328" stroke-width="1.5"/>
+<text x="12" y="347.0" fill="#1f2328">result_ready</text>
+<polyline points="160,336.0 204,336.0 204,336.0 248,336.0 248,336.0 292,336.0 292,336.0 336,336.0 336,336.0 380,336.0 380,336.0 424,336.0 424,336.0 468,336.0 468,336.0 512,336.0 512,336.0 556,336.0 556,336.0 600,336.0 600,336.0 644,336.0 644,336.0 688,336.0 688,336.0 732,336.0" fill="none" stroke="#1f2328" stroke-width="1.5"/>
+<text x="12" y="373.0" fill="#1f2328">result_reason</text>
+<line x1="160" y1="369.0" x2="204" y2="369.0" stroke="#8c959f"/>
+<line x1="204" y1="369.0" x2="248" y2="369.0" stroke="#8c959f"/>
+<line x1="248" y1="369.0" x2="292" y2="369.0" stroke="#8c959f"/>
+<line x1="292" y1="369.0" x2="336" y2="369.0" stroke="#8c959f"/>
+<line x1="336" y1="369.0" x2="380" y2="369.0" stroke="#8c959f"/>
+<line x1="380" y1="369.0" x2="424" y2="369.0" stroke="#8c959f"/>
+<line x1="424" y1="369.0" x2="468" y2="369.0" stroke="#8c959f"/>
+<line x1="468" y1="369.0" x2="512" y2="369.0" stroke="#8c959f"/>
+<line x1="512" y1="369.0" x2="556" y2="369.0" stroke="#8c959f"/>
+<line x1="556" y1="369.0" x2="600" y2="369.0" stroke="#8c959f"/>
+<line x1="600" y1="369.0" x2="644" y2="369.0" stroke="#8c959f"/>
+<line x1="644" y1="369.0" x2="688" y2="369.0" stroke="#8c959f"/>
+<polygon points="691,369.0 694,362.0 726,362.0 729,369.0 726,376.0 694,376.0" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="710.0" y="373.0" text-anchor="middle" fill="#1f2328" font-size="10">ACCEPT</text>
+<rect x="12" y="392" width="14" height="12" fill="#d1f0d9" stroke="#1f2328"/>
+<text x="32" y="402" fill="#1f2328">transfer (valid and ready)</text>
+<rect x="220" y="392" width="14" height="12" fill="#fbe5b5" stroke="#1f2328"/>
+<text x="240" y="402" fill="#1f2328">valid, stalled</text>
+<text x="12" y="420" fill="#8c959f">Cycle numbers count from the first byte of the frame.</text>
+</svg>

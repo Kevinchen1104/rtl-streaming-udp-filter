@@ -1,18 +1,29 @@
 {
   "status": "pass",
-  "reference_model_pytest_cases": 81,
-  "rtl_pytest_entry_cases": 1,
-  "cocotb_test_coroutines": 4,
-  "directed_frames": 77,
-  "flow_control_scenarios": 8,
-  "reset_scenarios": 6,
+  "reference_model_tests": 84,
+  "cocotb_tests": 59,
+  "cocotb_tests_by_group": {
+    "directed_frame": 34,
+    "header_truncation_sweep": 1,
+    "configuration_latched_per_frame": 1,
+    "sequence_wraps_at_32_bits": 1,
+    "flow_control": 6,
+    "reject_ignores_output_ready": 2,
+    "input_ready_is_registered": 1,
+    "back_to_back_frames": 1,
+    "waveform_example": 2,
+    "reset_mid_frame": 5,
+    "reset_while_descriptor_stalled": 1,
+    "randomized_regression": 4
+  },
   "randomized_frames": 800,
-  "fixed_seeds": [
+  "seeds": [
     1,
     7,
     42,
     2027
   ],
-  "scenario_matrix_rows": 50,
-  "simulator": "Icarus Verilog version 12.0 (devel) (s20150603-1539-g2693dd32b)"
+  "coverage_bins": 39,
+  "coverage_goal_per_bin": 5,
+  "simulator": "Icarus Verilog version 14.0 (devel) (s20260301-500-g2e81fcccb-dirty)"
 }

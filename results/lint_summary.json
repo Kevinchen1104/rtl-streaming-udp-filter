@@ -6,7 +6,7 @@
     "--Wall",
     "--Wno-fatal",
     "-DSYNTHESIS",
-    "-I.",
+    "-Irtl",
     "--top-module",
     "udp_packet_filter",
     "rtl/stream_byte_buffer.sv",
@@ -14,7 +14,7 @@
   ],
   "exit_status": 0,
   "tool_exit_status": 0,
-  "tool_version": "Verilator 5.048 2026-04-26 rev vUNKNOWN-built20260428",
+  "tool_version": "Verilator 5.053 devel rev v5.052-273-g71c6638cc (mod)",
   "warning_count": 0,
   "warnings": []
 }

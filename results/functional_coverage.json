@@ -1,67 +1,136 @@
 {
-  "source": "fixed-seed RTL randomized regression",
-  "total_frames": 800,
-  "bins": {
+  "source": "fixed-seed randomized RTL regression",
+  "frames": 800,
+  "seeds": [
+    1,
+    7,
+    42,
+    2027
+  ],
+  "goals": {
     "reason": {
-      "ACCEPT": 75,
-      "NON_IPV4": 85,
-      "BAD_IPV4_HEADER": 91,
-      "NON_UDP": 86,
-      "FRAGMENTED": 75,
-      "BAD_LENGTH_OR_TRUNCATED": 87,
-      "DST_PORT_MISMATCH": 110,
-      "MSG_TYPE_MISMATCH": 102,
-      "FRAME_TOO_LONG": 89
+      "ACCEPT": 5,
+      "NON_IPV4": 5,
+      "BAD_IPV4_HEADER": 5,
+      "NON_UDP": 5,
+      "FRAGMENTED": 5,
+      "BAD_LENGTH_OR_TRUNCATED": 5,
+      "DST_PORT_MISMATCH": 5,
+      "MSG_TYPE_MISMATCH": 5,
+      "FRAME_TOO_LONG": 5
     },
     "accepted_payload_size": {
-      "0": 18,
-      "8-63": 16,
-      "64-255": 11,
-      "1": 10,
-      "256+": 11,
-      "2-7": 9
+      "0": 5,
+      "1": 5,
+      "2-7": 5,
+      "8-63": 5,
+      "64-255": 5,
+      "256+": 5
     },
     "message_filter": {
-      "disabled": 373,
-      "enabled": 427
-    },
-    "port": {
-      "match": 690,
-      "mismatch": 110
+      "enabled": 5,
+      "disabled": 5
     },
     "padding": {
-      "yes": 57,
-      "no": 743
+      "yes": 5,
+      "no": 5
     },
     "df": {
-      "1": 397,
-      "0": 403
+      "0": 5,
+      "1": 5
     },
     "input_gaps": {
-      "yes": 419,
-      "no": 381
-    },
-    "output_backpressure": {
-      "no": 772,
-      "yes": 28
+      "yes": 5,
+      "no": 5
     },
     "result_backpressure": {
-      "no": 507,
-      "yes": 293
+      "yes": 5,
+      "no": 5
     },
     "truncation_region": {
-      "none": 713,
-      "udp": 12,
-      "ethernet": 17,
-      "ipv4": 26,
-      "first_payload": 15,
-      "later_payload": 17
+      "none": 5,
+      "ethernet": 5,
+      "ipv4": 5,
+      "udp": 5,
+      "first_payload": 5,
+      "later_payload": 5,
+      "after_filter_reject": 5
     },
     "output_semantic": {
-      "no_output": 711,
-      "full_good_output": 57,
-      "partial_error_output": 32
+      "full_good_output": 5,
+      "partial_error_output": 5,
+      "no_output": 5
+    },
+    "output_backpressure_on_payload": {
+      "stalled": 5,
+      "not_stalled": 5
+    },
+    "partial_output_x_output_stall": {
+      "stalled": 5,
+      "not_stalled": 5
     }
   },
-  "percentage_reported": false
+  "hits": {
+    "reason": {
+      "ACCEPT": 262,
+      "NON_IPV4": 38,
+      "BAD_IPV4_HEADER": 42,
+      "NON_UDP": 51,
+      "FRAGMENTED": 38,
+      "BAD_LENGTH_OR_TRUNCATED": 226,
+      "DST_PORT_MISMATCH": 53,
+      "MSG_TYPE_MISMATCH": 58,
+      "FRAME_TOO_LONG": 32
+    },
+    "accepted_payload_size": {
+      "0": 43,
+      "1": 53,
+      "2-7": 41,
+      "8-63": 47,
+      "64-255": 38,
+      "256+": 40
+    },
+    "message_filter": {
+      "enabled": 411,
+      "disabled": 389
+    },
+    "padding": {
+      "yes": 83,
+      "no": 717
+    },
+    "df": {
+      "0": 414,
+      "1": 386
+    },
+    "input_gaps": {
+      "yes": 395,
+      "no": 405
+    },
+    "result_backpressure": {
+      "yes": 291,
+      "no": 509
+    },
+    "truncation_region": {
+      "none": 607,
+      "ethernet": 18,
+      "ipv4": 26,
+      "udp": 19,
+      "first_payload": 31,
+      "later_payload": 30,
+      "after_filter_reject": 69
+    },
+    "output_semantic": {
+      "full_good_output": 219,
+      "partial_error_output": 61,
+      "no_output": 520
+    },
+    "output_backpressure_on_payload": {
+      "stalled": 100,
+      "not_stalled": 180
+    },
+    "partial_output_x_output_stall": {
+      "stalled": 15,
+      "not_stalled": 46
+    }
+  }
 }
