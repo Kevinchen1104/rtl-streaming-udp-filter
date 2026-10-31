@@ -42,6 +42,8 @@ class RunOptions:
     change_config_midframe: bool = False
     probe_next_frame: bool = False
     check_ready_isolation: bool = False
+    # If set, run_frame appends one snapshot of the DUT ports per cycle.
+    trace: list[dict[str, int]] | None = None
 
 
 @dataclass
@@ -221,6 +223,18 @@ async def run_frame(
         out_hs = bool(out_valid and value(dut.m_axis_tready))
         res_valid = bool(value(dut.result_valid))
         res_hs = bool(res_valid and value(dut.result_ready))
+
+        if options.trace is not None:
+            options.trace.append({
+                "cycle": cycle, "source_index": source_index,
+                "s_valid": value(dut.s_axis_tvalid), "s_ready": value(dut.s_axis_tready),
+                "s_data": value(dut.s_axis_tdata), "s_last": value(dut.s_axis_tlast),
+                "m_valid": value(dut.m_axis_tvalid), "m_ready": value(dut.m_axis_tready),
+                "m_data": value(dut.m_axis_tdata), "m_last": value(dut.m_axis_tlast),
+                "m_error": value(dut.m_axis_tuser_error),
+                "r_valid": value(dut.result_valid), "r_ready": value(dut.result_ready),
+                "r_reason": value(dut.result_reason),
+            })
 
         current_counters = (value(dut.header_index), value(dut.payload_left))
         if current_counters != prior_counters:
@@ -565,6 +579,23 @@ async def back_to_back_frames(dut) -> None:
         "cycles_first_to_last_input": close_cycle[len(frames) - 1] - first_cycle[0] + 1,
         "input_stall_cycles_after_frame": gaps,
     })
+
+
+@cocotb.test()
+@cocotb.parametrize(example=[
+    Param((build_frame(b"abcdef"), lambda c: c not in {44, 45}), "accepted_with_output_stall"),
+    Param((build_frame(b"abcdef")[:45], None), "late_truncation"),
+])
+async def waveform_example(dut, example: tuple[bytes, Callable[[int], bool] | None]) -> None:
+    """Record the end of a frame for the waveform figures in results/waveforms/."""
+    frame, output_ready = example
+    await start(dut)
+    trace: list[dict[str, int]] = []
+    await run_frame(dut, frame, model(frame, 0),
+                    options=RunOptions(output_ready=output_ready, trace=trace))
+    first = next(i for i, snapshot in enumerate(trace) if snapshot["source_index"] >= 39)
+    name = "accepted_with_output_stall" if len(frame) > 45 else "late_truncation"
+    write_json(raw_dir("waves") / f"{name}.json", trace[first:])
 
 
 # --------------------------------------------------------------------------

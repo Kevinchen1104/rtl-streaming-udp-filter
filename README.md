@@ -2,125 +2,144 @@
 
 [![RTL verification](https://github.com/Kevinchen1104/rtl-streaming-udp-filter/actions/workflows/ci.yml/badge.svg)](https://github.com/Kevinchen1104/rtl-streaming-udp-filter/actions/workflows/ci.yml)
 
-This repository implements a synthesizable 8-bit ready/valid SystemVerilog
-block that parses a constrained Ethernet II + fixed-header IPv4 + UDP stream,
-filters by destination port and optional first payload byte, forwards candidate
-payload with speculative cut-through, and emits one authoritative descriptor
-per completed frame.
+A SystemVerilog block that sits behind an Ethernet MAC and keeps only the UDP
+traffic you care about. It reads each frame one byte per cycle, drops anything
+that is not IPv4/UDP to the configured port (optionally, also anything whose
+payload does not start with a configured message-type byte), and streams the
+matching payload out one cycle after it arrives. For every frame it also
+produces a result record: accepted or not, why, the addresses and ports, and a
+sequence number.
 
-## Supported protocol subset
+This is the kind of front-end filter used in FPGA network appliances, for
+example to pick one feed and one message type out of a market-data stream
+before any further processing.
 
-- Raw Ethernet II bytes from destination MAC through the last frame byte; no
-  preamble, SFD, FCS, VLAN, or MAC/PHY signaling.
-- EtherType `0x0800`; IPv4 version 4 and IHL 5; protocol 17; no fragments.
-- IPv4 total length at least 28, UDP length at least 8, and strict
+| | |
+|---|---|
+| Interfaces | 8-bit AXI4-Stream-style input and output, plus a result record with its own valid/ready |
+| Throughput | 1 byte per cycle; 1-2 idle input cycles between frames |
+| Latency | First payload byte out 1 cycle after it is accepted |
+| FPGA | Lattice ECP5-25F: 1,019 logic cells, 346 FFs, 126-132 MHz across 5 placement seeds (125 MHz = 1 Gb/s) |
+| | Xilinx Artix-7 estimate: 571 LUTs, 346 FFs (under 3% of a Basys 3) |
+| Verification | Python reference model; 59 cocotb tests including 800 random frames; formal proof of the handshake properties |
+
+## How it works
+
+```mermaid
+flowchart LR
+    IN["s_axis<br/>frame bytes"] --> P["Header parser<br/>Ethernet, IPv4, UDP"]
+    CFG["cfg_dst_port<br/>cfg_msg_type"] --> P
+    P -- "payload of a frame<br/>that still passes" --> B["2-entry<br/>skid buffer"]
+    B --> OUT["m_axis<br/>payload"]
+    P -- "one per frame" --> R["result_*<br/>record"]
+```
+
+The parser counts header bytes and checks each field as soon as its last
+byte arrives. A frame that fails a check is read to its end and dropped, with
+nothing on the output. Once the 42-byte header has passed, the payload streams
+through a two-entry skid buffer to the output.
+
+![Accepted frame with a 2-cycle output stall](results/waveforms/accepted_with_output_stall.svg)
+
+Above, the last header bytes and a 6-byte payload, recorded from simulation.
+The output stalls at cycles 44-45. The input keeps going for one more byte
+(it lands in the skid register), then `s_axis_tready` drops. Once the output
+moves again, the result record follows the last payload byte.
+
+### Cut-through, and frames that end early
+
+The block forwards payload before the frame has ended (cut-through) instead
+of storing the whole frame first (store-and-forward). That keeps latency at
+one cycle and needs no frame-sized memory, but a frame can turn out to be
+short after some payload has gone out. Those bytes cannot be recalled, so the
+last one carries `m_axis_tlast = 1` and `m_axis_tuser_error = 1`, and the
+result record says `BAD_LENGTH_OR_TRUNCATED`. A consumer that must see only
+complete frames buffers the payload until the result record says accept.
+
+![Frame that ends after 3 of 6 declared payload bytes](results/waveforms/late_truncation.svg)
+
+## Design decisions
+
+- **Registered input ready.** The payload buffer is an output register plus a
+  skid register, so `s_axis_tready` comes from a flop and `m_axis_tready` has
+  no combinational path to it. A one-entry buffer would be smaller, but chained
+  blocks would then form one long combinational ready path.
+- **One rule for the result reason.** The reason is the first check that fails
+  in a fixed order: eligibility (EtherType, IPv4 header, length limit,
+  protocol, fragmentation), then lengths and truncation, then port, then
+  message type. It depends only on the frame's bytes, not on which byte the
+  frame happened to end on. See [spec.md](docs/spec.md#which-reason-applies).
+- **Timing.** The first version reached 106 MHz on the ECP5. Its critical path
+  went through a +1 adder and a 16-bit comparator in the same cycle. Counting
+  the payload down with registered `== 1` and `> 1` flags, and checking the
+  UDP lengths one byte early, brought the slowest seed to 126 MHz.
+- **Gap between frames.** Handing off the result record costs one or two idle
+  input cycles per frame. On a 1 Gb/s link the MAC's output is already idle for
+  at least 20 byte times between frames, so this does not limit throughput.
+
+More detail: [architecture](docs/architecture.md).
+
+## Supported frames
+
+- Raw Ethernet II bytes starting at the destination MAC; no preamble, SFD,
+  or FCS.
+- IPv4 without options, protocol UDP, not fragmented, with
   `udp_length == ip_total_length - 20`.
-- IPv4 and UDP checksum fields are ignored and are not validated.
-- Destination-port filter always enabled; optional first-payload-byte filter.
-- Ethernet padding after the logical datagram is drained and never emitted.
+- Ethernet padding after the datagram is read and dropped.
+- Checksums are not checked.
 
-## Architecture
+Everything else is listed in the [specification](docs/spec.md) and
+[limitations](docs/limitations.md).
 
-```text
-ready/valid input -> Ethernet -> IPv4 -> UDP/length -> filters
-                                                        |
-                                              two-entry skid buffer
-                                                        |
-                                             speculative payload output
-                                                        |
-                                  frame close + all payload handshakes
-                                                        |
-                                         authoritative descriptor
-```
+## Verification
 
-Payload already transferred cannot be recalled after late truncation. Its
-terminal beat carries `last=1,error=1`, and the rejected descriptor is
-authoritative. A commit-only consumer must buffer payload until it receives an
-accepted descriptor. See [architecture](docs/architecture.md).
+- **Reference model.** `sim/reference_model.py` classifies a whole frame by
+  walking the specification's checks in order. 84 pytest tests cover it,
+  including hand-written hex vectors that pin down byte order.
+- **Simulation.** 59 cocotb tests on Icarus Verilog, one per scenario. Every
+  payload byte and result record is compared with the model. 800 random frames
+  (4 fixed seeds) mix every reason, payload sizes, padding, truncation points,
+  and input, output, and result stalls. All 39 declared coverage bins are hit
+  at least 5 times, or the run fails.
+- **Formal.** SymbiYosys proves, for all reachable states, that stalled data
+  holds, that a result record appears only for a frame that has ended and only
+  after its payload is out, and that a pending record blocks the next frame.
+- **Lint.** Verilator `--Wall` with no warnings.
 
-## Interface summary
+Reports: [regression](results/regression_summary.md),
+[verification matrix](results/verification_matrix.md),
+[coverage](results/functional_coverage.md),
+[latency](results/latency_metrics.md), [FPGA](results/fpga_summary.md),
+[formal](results/formal_summary.md). How each property is checked:
+[verification plan](docs/verification-plan.md).
 
-The top-level module is `udp_packet_filter`, parameterized by
-`MAX_LOGICAL_FRAME_BYTES=2048`. It has:
+## Running it
 
-- input byte stream: `s_axis_tdata/tvalid/tready/tlast`;
-- sampled-per-frame configuration: destination port, message enable/type;
-- output byte stream: `m_axis_tdata/tvalid/tready/tlast/tuser_error`;
-- one held result descriptor containing accept/reason, IP/port metadata,
-  declared payload length, and modulo-2^32 sequence.
+Needs Python 3.11+ and [OSS CAD Suite](https://github.com/YosysHQ/oss-cad-suite-build)
+(Yosys, Icarus Verilog, Verilator, nextpnr-ecp5, SymbiYosys) on `PATH`. CI
+uses the 2026-10-01 build, the same one that produced the files in `results/`.
 
-Reset is synchronous active-low. It aborts a partial frame without a descriptor
-and resets the next sequence to zero.
-
-## Reproduce the results
-
-Python 3.11+, pytest, cocotb, Icarus Verilog, Verilator, and Yosys are required.
-
-```text
+```bash
 python -m venv .venv
-.venv/Scripts/python -m pip install -r requirements-dev.txt
-.venv/Scripts/python scripts/run_all.py
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python scripts/run_all.py
 ```
 
-On Linux/macOS, use `.venv/bin/python`. The canonical repository command is:
+On Windows, use `.venv\Scripts\python`. A full run takes about 3 minutes,
+stops at the first failure, and rewrites `results/`.
 
-```text
-python scripts/run_all.py
-```
+## Repository layout
 
-It returns nonzero if model tests, RTL regression, lint, synthesis, or evidence
-generation fails.
+| Path | Contents |
+|---|---|
+| `rtl/` | The design |
+| `sim/` | Reference model, packet builder, cocotb tests, coverage bins |
+| `formal/` | SymbiYosys properties and job file |
+| `synth/` | Generic Yosys synthesis script |
+| `scripts/` | `run_all.py` and the steps it runs |
+| `docs/` | Specification, architecture, verification plan, limitations |
+| `results/` | Generated reports and waveforms |
 
-## Examples
+## License
 
-- A frame ending after a structurally valid UDP header with destination port
-  `0xBEEF`, zero payload, and message filtering disabled is accepted and emits
-  no payload beat.
-- The same frame with message filtering enabled returns
-  `MSG_TYPE_MISMATCH`.
-- A candidate declaring four payload bytes but closing after two emits those two
-  speculative bytes; the second has `last=1,error=1`, and the descriptor returns
-  `BAD_LENGTH_OR_TRUNCATED`.
-
-## Verification and synthesis results
-
-The latest checked-in evidence was generated by `scripts/run_all.py`:
-
-- 81 reference-model pytest cases and four cocotb test coroutines;
-- 77 directed frames, eight flow-control scenarios, six reset scenarios;
-- 800 randomized frames: 200 each for seeds 1, 7, 42, and 2027;
-- all nine reason codes and every reported functional-coverage bin have
-  nonzero hits;
-- Verilator 5.048 lint: exit 0, zero warnings;
-- Yosys 0.56 generic synthesis: exit 0, 0 check problems, no inferred
-  latches, 3,210 hierarchical generic cells.
-
-Exact counts are in [regression summary](results/regression_summary.md),
-[coverage](results/functional_coverage.md), [latency](results/latency_metrics.md),
-[lint](results/lint_summary.md), [synthesis](results/synthesis_summary.md), and
-the [run manifest](results/run_manifest.json).
-
-Measured no-stall payload behavior is one registered cycle from first payload
-input handshake to output valid, then one byte per cycle. The fixed periodic
-output-backpressure scenario added 31 cycles through descriptor handshake versus
-the same no-stall frame. Definitions and per-event cycles are in the latency
-report.
-
-## Scope and limitations
-
-This implementation does not include an Ethernet MAC, a general IPv4 stack,
-checksum validation, fragment reassembly, an AXI4-Stream compliance layer, a
-UVM/formal environment, or physical implementation. Generic Yosys cell counts
-do not provide FPGA LUT use, WNS, Fmax, line-rate operation, or hardware
-validation. See [limitations](docs/limitations.md).
-
-The GitHub Actions workflow runs the same canonical regression, lint, synthesis,
-and evidence-generation command on pushes and pull requests.
-
-## Documentation
-
-- [Specification](docs/spec.md)
-- [Architecture](docs/architecture.md)
-- [Verification plan and assertion mapping](docs/verification-plan.md)
-- [Executed scenario matrix](results/verification_matrix.md)
-- [Limitations](docs/limitations.md)
+[MIT](LICENSE)

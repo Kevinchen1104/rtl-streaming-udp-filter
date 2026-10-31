@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rtl-streaming-udp-filter"
-version = "1.0.0"
+version = "1.1.0"
 description = "RTL, reference model, and verification for a streaming Ethernet/IPv4/UDP filter"
 requires-python = ">=3.11"
 

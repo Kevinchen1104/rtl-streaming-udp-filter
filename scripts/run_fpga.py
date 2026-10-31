@@ -81,8 +81,8 @@ def main() -> int:
             runs.append({
                 "seed": seed,
                 "fmax_mhz": round(float(data["fmax"]["clk"]["achieved"]), 1),
-                "LUT4": used["TRELLIS_COMB"]["used"],
-                "LUT4_available": used["TRELLIS_COMB"]["available"],
+                "logic_cells": used["TRELLIS_COMB"]["used"],
+                "logic_cells_available": used["TRELLIS_COMB"]["available"],
                 "FF": used["TRELLIS_FF"]["used"],
                 "FF_available": used["TRELLIS_FF"]["available"],
             })
@@ -120,12 +120,13 @@ def main() -> int:
         f"## Lattice ECP5 {ECP5_DEVICE['name']} (speed grade 6), place and route",
         "",
         "Out of context (no I/O pins), so these are register-to-register numbers. "
-        f"Target {TARGET_MHZ} MHz: 8 bits per cycle at 125 MHz is 1 Gb/s.",
+        f"Target {TARGET_MHZ} MHz: 8 bits per cycle at 125 MHz is 1 Gb/s. "
+        "Logic cells are nextpnr's TRELLIS_COMB count (each a LUT4 or half a carry cell).",
         "",
-        "| Seed | Fmax (MHz) | LUT4 | FF |",
+        "| Seed | Fmax (MHz) | Logic cells | FF |",
         "|---:|---:|---:|---:|",
     ]
-    lines += [f"| {r['seed']} | {r['fmax_mhz']} | {r['LUT4']} / {r['LUT4_available']} "
+    lines += [f"| {r['seed']} | {r['fmax_mhz']} | {r['logic_cells']} / {r['logic_cells_available']} "
               f"| {r['FF']} / {r['FF_available']} |" for r in runs]
     lines += [
         "",

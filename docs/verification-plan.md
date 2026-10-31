@@ -60,6 +60,7 @@
 | `reset_mid_frame` | Reset in idle, in each header, and with two payload beats buffered |
 | `reset_while_descriptor_stalled` | Reset while the descriptor waits for `result_ready` |
 | `randomized_regression` | 200 random frames for each of seeds 1, 7, 42, 2027 |
+| `waveform_example` | Records two short traces for the waveform figures in `results/waveforms/` |
 
 ## Randomized regression and coverage
 

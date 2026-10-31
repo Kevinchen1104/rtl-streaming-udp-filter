@@ -1,73 +1,61 @@
-# Streaming UDP Packet Filter v1 Specification
+# Streaming UDP Packet Filter: Specification
 
-- **Version:** 1.0
-- **Implementation:** synthesizable SystemVerilog
-- **Verification:** Python, cocotb, pytest
-- **Synthesis target:** generic Yosys netlist
+Version 1.1. This document defines what the block does at its ports. How it
+is built is in [architecture.md](architecture.md); how it is verified is in
+[verification-plan.md](verification-plan.md).
 
-This document defines the supported protocol subset, external interface,
-observable behavior, verification requirements, and scope boundaries for v1.
+## 1. What the block does
 
-## 1. Purpose and scope
+The block takes one raw Ethernet II frame at a time, one byte per cycle,
+over a ready/valid interface. It keeps IPv4/UDP datagrams addressed to a
+configured destination port and, optionally, whose first payload byte matches
+a configured message type. It forwards the UDP payload of those datagrams and,
+for every frame, produces one result record that says whether the frame was
+accepted and why not if it was rejected.
 
-The block receives one raw Ethernet II frame at a time over an 8-bit
-ready/valid interface. It parses a constrained IPv4/UDP subset, rejects
-unsupported or malformed frames, filters supported datagrams, forwards
-candidate UDP payload bytes, and emits one authoritative result descriptor per
-completed input frame.
+### Supported frames
 
-### Supported subset
+- Input starts at the first byte of the destination MAC. There is no preamble,
+  SFD, or FCS; the MAC in front of this block handles those.
+- EtherType `0x0800` (IPv4), IPv4 version 4 with IHL 5 (no options),
+  protocol 17 (UDP).
+- Not fragmented: MF is 0 and the fragment offset is 0. DF is ignored.
+- `ip_total_length >= 28`, `udp_length >= 8`, and
+  `udp_length == ip_total_length - 20`.
+- IPv4 and UDP checksums are not checked.
+- Bytes after the end of the IPv4 datagram are Ethernet padding. They are
+  read and dropped.
 
-- Input begins at Ethernet destination-MAC byte 0.
-- Preamble, SFD, and FCS are not present.
-- Ethernet II EtherType must be `16'h0800`.
-- IPv4 version must be 4 and IHL must be 5.
-- IPv4 protocol must be 17 for UDP.
-- `MF` and fragment offset must both be zero; `DF` is ignored.
-- IPv4 and UDP checksum fields are not verified.
-- IPv4 total length must be at least 28.
-- UDP length must be at least 8.
-- UDP length must equal `ip_total_length - 20`.
-- Ethernet padding may follow the logical IPv4 datagram and is drained.
-- Destination-port filtering is always enabled.
-- First-payload-byte filtering is optional.
+Not supported: VLAN tags, IPv6, IP options, fragment reassembly, checksum
+checks, more than one result record in flight, and timeouts.
 
-### Excluded features
+## 2. Byte layout
 
-VLAN, IPv6, IP options, fragment reassembly, checksum validation, Ethernet
-PHY/MAC signaling, multiple outstanding descriptors, timeout-based recovery,
-and physical timing closure are outside v1.
-
-## 2. Byte layout and endianness
-
-All multibyte fields use network byte order (big-endian). Offsets are measured
-from Ethernet destination-MAC byte 0.
+All multibyte fields are big-endian. Offsets count from the first byte of the
+destination MAC.
 
 | Offset | Bytes | Field |
 |---:|---:|---|
-| 0-5 | 6 | Destination MAC, ignored |
-| 6-11 | 6 | Source MAC, ignored |
+| 0-5 | 6 | Destination MAC (ignored) |
+| 6-11 | 6 | Source MAC (ignored) |
 | 12-13 | 2 | EtherType |
-| 14 | 1 | IPv4 version/IHL |
-| 15 | 1 | DSCP/ECN, ignored |
+| 14 | 1 | IPv4 version and IHL |
+| 15 | 1 | DSCP/ECN (ignored) |
 | 16-17 | 2 | IPv4 total length |
-| 18-19 | 2 | Identification, ignored |
+| 18-19 | 2 | Identification (ignored) |
 | 20-21 | 2 | Flags and fragment offset |
-| 22 | 1 | TTL, ignored |
-| 23 | 1 | IPv4 protocol |
-| 24-25 | 2 | IPv4 checksum, ignored |
+| 22 | 1 | TTL (ignored) |
+| 23 | 1 | Protocol |
+| 24-25 | 2 | IPv4 header checksum (ignored) |
 | 26-29 | 4 | Source IPv4 address |
 | 30-33 | 4 | Destination IPv4 address |
 | 34-35 | 2 | UDP source port |
 | 36-37 | 2 | UDP destination port |
 | 38-39 | 2 | UDP length |
-| 40-41 | 2 | UDP checksum, ignored |
+| 40-41 | 2 | UDP checksum (ignored) |
 | 42 onward | variable | UDP payload |
 
-Multibyte metadata is committed only after every byte of the field transfers.
-A field truncated before its final byte remains zero in the descriptor.
-
-## 3. Top-level interface
+## 3. Ports
 
 ```systemverilog
 module udp_packet_filter #(
@@ -104,253 +92,133 @@ module udp_packet_filter #(
 );
 ```
 
-### Reset
+The streams use AXI4-Stream signal names and handshake rules: a byte moves
+on a rising edge where valid and ready are both high, and a source holds its
+valid, data, and last until that happens. Only TDATA, TVALID, TREADY, TLAST,
+and one TUSER bit exist; there is no TKEEP, TSTRB, TID, or TDEST.
 
-- `rst_n` is active-low and synchronous to `clk`.
-- While reset is asserted, input ready, output valid, and result valid are zero.
-- Reset clears parser state, buffer state, metadata, descriptor state, and the
-  sequence counter.
-- Reset during a frame aborts that frame without a descriptor.
-- The next completed frame after reset has sequence zero.
+`MAX_LOGICAL_FRAME_BYTES` is a policy limit on `14 + ip_total_length`, not a
+buffer size. It must be at least 42.
 
-### Input transfer
+## 4. Reset
 
-An input byte transfers only when `s_axis_tvalid && s_axis_tready`. The first
-transferred byte in idle is offset 0. The transferred byte with
-`s_axis_tlast=1` closes the frame. Data, last, and valid must remain stable while
-valid is asserted and ready is deasserted.
+- `rst_n` is active low and sampled on the rising edge of `clk`.
+- While `rst_n` is low, `s_axis_tready`, `m_axis_tvalid`, and `result_valid`
+  are low, including before the first clock edge of the reset.
+- Reset clears all state. A frame in progress is dropped without a result
+  record, and the next result record has sequence 0.
 
-### Configuration sampling
+## 5. Input
 
-All configuration inputs are sampled on the first input handshake and remain
-internally fixed for that frame.
+The first byte accepted while the block is idle is offset 0 of a new frame.
+The byte accepted with `s_axis_tlast` high is the last byte of the frame.
+`cfg_dst_port`, `cfg_msg_type_enable`, and `cfg_msg_type` are sampled with the
+first byte and used for the whole frame.
 
-### Payload output
+While a result record is waiting for `result_ready`, the block does not
+accept the next frame.
 
-A payload byte transfers only when `m_axis_tvalid && m_axis_tready`. Data, last,
-and error remain stable during a stall. Zero-length payloads produce no output
-beat.
+## 6. Payload output
 
-The final good payload beat carries `m_axis_tlast=1` and
-`m_axis_tuser_error=0`. If a frame closes early on a forwarded payload byte,
-that final partial beat carries both last and error.
+Payload is forwarded while the frame still passes every check that has been
+decided, before the frame has ended (cut-through). So:
 
-### Result descriptor
+- A frame rejected before its payload starts produces no output.
+- With message filtering on, the first payload byte is compared before it is
+  forwarded; a mismatch produces no output.
+- A frame that passes every check produces its payload, and the last payload
+  byte has `m_axis_tlast = 1` and `m_axis_tuser_error = 0`. Zero-length
+  payloads produce no output.
+- A frame that ends before its declared payload is complete, after some of
+  its payload was forwarded, ends the output with `m_axis_tlast = 1` and
+  `m_axis_tuser_error = 1`.
 
-Exactly one descriptor is produced for every frame closed by an input
-handshake, except a reset-aborted frame. All fields remain stable until
-`result_valid && result_ready`.
+Bytes already forwarded cannot be taken back. The result record decides
+whether a frame's payload is good. A consumer that must only see complete,
+accepted payloads buffers each frame's payload until its result record says
+accept.
 
-No descriptor may handshake before every payload beat from the same frame has
-handshaken. A pending descriptor backpressures the next input frame. Sequence
-increments once per created descriptor and wraps modulo 2^32.
+`m_axis_tdata`, `m_axis_tlast`, and `m_axis_tuser_error` hold while
+`m_axis_tvalid` is high and `m_axis_tready` is low.
 
-## 4. Speculative cut-through semantics
+## 7. Result record
 
-Payload is speculative until the result descriptor is accepted. A cut-through
-design cannot recall bytes transferred before a late error is discovered.
+Exactly one result record is produced for each frame that ends with an
+accepted `s_axis_tlast` byte. A frame ended by reset produces none.
 
-- Early rejects produce no payload.
-- Late payload truncation may produce a partial payload stream.
-- A partial stream terminates with output last and error asserted.
-- The result descriptor is authoritative for committing or discarding data.
-- A commit-only downstream system requires external transaction buffering.
+- `result_valid` rises only after every payload byte of the frame has been
+  transferred.
+- All `result_*` fields hold until `result_valid` and `result_ready` are both
+  high.
+- `result_sequence` counts result records, starting at 0 after reset and
+  wrapping at 2^32.
+- `result_accept` is 1 exactly when `result_reason` is `ACCEPT`.
 
-## 5. Result reasons
+### Reasons
 
-| Value | Symbol | Meaning |
+| Value | Name | Meaning |
 |---:|---|---|
-| 0 | `REASON_ACCEPT` | Supported, structurally valid, all filters match |
-| 1 | `REASON_NON_IPV4` | EtherType is not IPv4 |
-| 2 | `REASON_BAD_IPV4_HEADER` | Version is not 4 or IHL is not 5 |
-| 3 | `REASON_NON_UDP` | IPv4 protocol is not UDP |
-| 4 | `REASON_FRAGMENTED` | MF is set or fragment offset is nonzero |
-| 5 | `REASON_BAD_LENGTH_OR_TRUNCATED` | Inconsistent lengths, or the frame ends before the datagram does |
-| 6 | `REASON_DST_PORT_MISMATCH` | Complete datagram, destination port differs |
-| 7 | `REASON_MSG_TYPE_MISMATCH` | Port matches; message filter fails or payload is empty |
-| 8 | `REASON_FRAME_TOO_LONG` | Logical Ethernet+IPv4 length exceeds the parameter |
+| 0 | `ACCEPT` | Supported, well formed, and passes both filters |
+| 1 | `NON_IPV4` | EtherType is not `0x0800` |
+| 2 | `BAD_IPV4_HEADER` | Version is not 4, or IHL is not 5 |
+| 3 | `NON_UDP` | Protocol is not 17 |
+| 4 | `FRAGMENTED` | MF is set or the fragment offset is not zero |
+| 5 | `BAD_LENGTH_OR_TRUNCATED` | Lengths are inconsistent, or the frame ends before the datagram does |
+| 6 | `DST_PORT_MISMATCH` | Complete datagram, destination port differs |
+| 7 | `MSG_TYPE_MISMATCH` | Port matches; message filtering is on and the payload is empty or its first byte differs |
+| 8 | `FRAME_TOO_LONG` | `14 + ip_total_length` exceeds `MAX_LOGICAL_FRAME_BYTES` |
 
-`result_accept` is one exactly when the result reason is `REASON_ACCEPT`.
+### Which reason applies
 
-### Priority
-
-The reason depends only on the bytes of the frame, not on where it ends
-relative to an internal decision. Checks run in this order, and the first one
-that fails sets the reason:
+The reason depends only on the bytes of the frame. Checks run in this order,
+and the first one that fails sets the reason:
 
 1. EtherType (bytes 12-13) is `0x0800`, else `NON_IPV4`.
 2. Version is 4 and IHL is 5 (byte 14), else `BAD_IPV4_HEADER`.
-3. `14 + ip_total_length` (bytes 16-17) is within the parameter, else
+3. `14 + ip_total_length` (bytes 16-17) is within the limit, else
    `FRAME_TOO_LONG`.
 4. Protocol (byte 23) is 17, else `NON_UDP`.
 5. MF and fragment offset (bytes 20-21) are zero, else `FRAGMENTED`.
-6. The UDP header is complete (bytes 34-41), the length rules hold, and the
-   frame reaches the declared datagram end, else `BAD_LENGTH_OR_TRUNCATED`.
-7. Destination port matches, else `DST_PORT_MISMATCH`.
-8. With message filtering on, the payload is non-empty and its first byte
+6. The UDP header is complete, the length rules in section 1 hold, and the
+   frame reaches the end of the declared datagram, else
+   `BAD_LENGTH_OR_TRUNCATED`.
+7. The destination port matches, else `DST_PORT_MISMATCH`.
+8. With message filtering on, the payload is not empty and its first byte
    matches, else `MSG_TYPE_MISMATCH`.
 
 If the frame ends before the bytes a check needs, that check reports
-`BAD_LENGTH_OR_TRUNCATED`. Because eligibility checks come first, a frame
-already rejected as non-IPv4, non-UDP, and so on keeps that reason even when it
-is also short. A frame rejected by a filter is still reported as truncated if
-it ends before its declared datagram end.
+`BAD_LENGTH_OR_TRUNCATED`. A frame that fails checks 1-5 keeps that reason
+even if it is also short. A frame that fails the port or message filter is
+still reported as truncated if it ends before its declared datagram end.
 
 ### Metadata
 
-Source/destination IP addresses and ports contain only fully observed fields.
-Declared payload length is reported once the UDP header is complete and the
-length rules hold, including for filter rejects and truncated frames.
+`result_src_ip`, `result_dst_ip`, `result_src_port`, and `result_dst_port`
+hold a field only if all of its bytes arrived; otherwise they are 0.
+`result_payload_len` is `udp_length - 8` once the UDP header is complete and
+the length rules hold, including for filter rejects and truncated frames, and
+0 otherwise.
 
-## 6. Parser behavior
+## 8. Timing
 
-The implementation uses the following states:
+- Header and drained bytes are accepted every cycle.
+- Payload moves at one byte per cycle when the output is ready.
+- The first payload byte appears on the output one cycle after it is accepted.
+- `s_axis_tready` does not depend combinationally on `m_axis_tready`.
+- Between frames, input is not ready for one cycle (two if the frame's last
+  byte was a forwarded payload byte) while the result record is handed off,
+  when `m_axis_tready` and `result_ready` are both high.
 
-- `ST_IDLE`
-- `ST_ETH_HEADER`
-- `ST_IPV4_HEADER`
-- `ST_UDP_HEADER`
-- `ST_FIRST_PAYLOAD`
-- `ST_PASS_PAYLOAD`
-- `ST_DRAIN`
-- `ST_WAIT_OUTPUT`
-- `ST_RESULT_HOLD`
+Measured values are in [results/latency_metrics.md](../results/latency_metrics.md).
 
-The header byte counter and the payload counter advance only on an input
-handshake. The header counter stops after byte 41.
+## 9. Frames that never end
 
-### Ethernet and IPv4
+There is no timeout. If the source never sends `s_axis_tlast`, the block
+stays in that frame until reset.
 
-MAC addresses are counted and ignored. EtherType is committed at byte 13.
-Version/IHL is checked at byte 14, total length at bytes 16-17, fragmentation at
-bytes 20-21, and protocol at byte 23. IP addresses are shifted and committed at
-bytes 29 and 33.
+## Changes from version 1.0
 
-Fragment information is held until protocol byte 23 so `NON_UDP` has priority
-over `FRAGMENTED`.
-
-### UDP and filtering
-
-Ports and UDP length are committed by byte 39. At byte 41 the design verifies:
-
-- `ip_total_length >= 28`;
-- `udp_length >= 8`;
-- `udp_length == ip_total_length - 20`.
-
-Only after these checks does destination-port filtering apply. A zero-byte
-payload is accepted only when message filtering is disabled.
-
-When message filtering is enabled, the first payload byte is compared before
-being exposed. A mismatch is discarded and the remaining frame is drained.
-
-### Payload completion and padding
-
-The final declared payload byte is emitted with last asserted. Additional bytes
-before input `tlast` are Ethernet padding and are not forwarded. If the frame
-closes while a terminal output beat remains buffered, `ST_WAIT_OUTPUT` holds
-input not-ready until that beat handshakes, then creates the descriptor.
-
-### Unterminated frames
-
-No timeout exists. A frame that never transfers `tlast` leaves the parser in its
-current transaction.
-
-## 7. Output skid buffer
-
-Payload passes through a two-entry skid buffer: an output register plus one
-skid register. In payload states, input ready is high whenever the skid
-register is empty. It comes from a flop, so `m_axis_tready` has no
-combinational path to `s_axis_tready`. A stalled entry is never overwritten.
-
-Header and drain states keep input ready high regardless of the output.
-
-## 8. Performance contract
-
-- Header and drain states accept up to one byte per cycle.
-- Accepted payload sustains one byte per cycle without downstream stalls.
-- The registered buffer makes first output valid one cycle after the first
-  payload input handshake.
-- A pending descriptor creates an intentional inter-frame stall.
-
-Measured cycle events and the fixed backpressure comparison are saved in
-`results/latency_metrics.json` and `results/latency_metrics.md`.
-
-## 9. Independent reference model
-
-`sim/reference_model.py` parses a complete byte array declaratively. It does not
-mirror RTL states or counters. Packet construction is isolated in
-`sim/packet_builder.py`, and hand-written raw vectors independently check byte
-order and classification semantics.
-
-The scoreboard compares exact payload events, descriptor fields, sequence, and
-late-truncation terminal behavior.
-
-## 10. Verification requirements
-
-The directed matrix covers:
-
-- zero-, one-, multi-byte, message-filtered, padded, DF, endian, and maximum
-  accepted frames;
-- all eligibility and filter reasons;
-- invalid IP/UDP lengths and logical maximum;
-- truncation at every header byte and multiple payload positions;
-- input gaps, payload stalls, result stalls, immediate next-frame pressure,
-  and long accepted payloads;
-- reset in idle, each header region, stalled payload, and stalled descriptor;
-- mixed classification sequencing and modulo sequence wrap.
-
-Random regression uses seeds `1`, `7`, `42`, and `2027`, with 200 frames per
-seed. It mixes field mutations, padding, filter modes, truncation regions, and
-all three backpressure dimensions.
-
-The generated named-scenario mapping is stored in
-`results/verification_matrix.md`; its row count comes from the executed
-regression artifacts.
-
-## 11. Assertions and coverage
-
-Executed RTL assertions and cocotb monitors verify:
-
-1. output stability while stalled;
-2. byte-index changes only after input handshake;
-3. descriptor stability while stalled;
-4. accept/reason equivalence;
-5. no output for early rejects;
-6. exact good payload length and order;
-7. error termination of partial output;
-8. good final-beat last/error semantics;
-9. no stalled-buffer overwrite;
-10. one descriptor per closed frame;
-11. no descriptor for reset-aborted frames;
-12. per-frame configuration stability;
-13. payload completion before descriptor validity.
-
-Functional coverage reports raw hit counts for every reason, payload-size bin,
-filter mode, port relation, padding, DF, backpressure dimension, truncation
-region, and output semantic. Percentage coverage is not reported.
-
-## 12. Reproducibility, lint, synthesis, and CI
-
-The canonical command is:
-
-```text
-python scripts/run_all.py
-```
-
-It runs reference-model tests, RTL simulation, Verilator lint, generic Yosys
-synthesis, and evidence generation, returning nonzero on failure.
-
-Saved evidence includes exact tool versions, commands, exit status, warning
-counts, regression counts, coverage hits, latency events, Yosys check results,
-and generic cell statistics.
-
-The GitHub Actions workflow runs the same command on pushes and pull requests.
-
-## 13. Scope boundaries
-
-Successful generic Yosys synthesis demonstrates that the design can be lowered
-to a generic netlist. It does not establish FPGA LUT count, WNS, Fmax, board
-operation, Ethernet line rate, ASIC timing, power, or physical implementation
-quality.
-
-FPGA wrappers and hardware validation are outside this specification.
+- A frame rejected by the port or message filter that ends before its
+  declared datagram end now reports `BAD_LENGTH_OR_TRUNCATED`. In 1.0 this
+  depended on which byte the frame ended on.
+- `s_axis_tready` no longer depends combinationally on `m_axis_tready`.

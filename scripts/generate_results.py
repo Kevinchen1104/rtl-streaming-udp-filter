@@ -24,6 +24,8 @@ RAW = RESULTS / "raw"
 sys.path.insert(0, str(ROOT))
 from sim import coverage  # noqa: E402
 
+import render_waveforms  # noqa: E402
+
 
 def load_json(path: Path) -> dict:
     if not path.is_file():
@@ -242,6 +244,8 @@ def main() -> int:
     lines += [f"| {index} | `{t['group']}` | {t['scenario'].replace('_', ' ') or '-'} "
               f"| {t['result']} |" for index, t in enumerate(tests, 1)]
     write_lines(RESULTS / "verification_matrix.md", lines)
+
+    render_waveforms.main()
 
     # ---- tool versions --------------------------------------------------
     write_lines(RESULTS / "tool_versions.txt", [
