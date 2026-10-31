@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
 // Simulation-time protocol checks. They are immediate assertions inside a
 // clocked block, because Icarus does not support concurrent assertions.
+// formal/udp_packet_filter_formal.sv proves the same properties for all
+// reachable states.
 module udp_packet_filter_checks (
     input logic        clk,
     input logic        rst_n,

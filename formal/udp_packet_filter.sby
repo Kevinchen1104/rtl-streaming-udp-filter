@@ -1,0 +1,30 @@
+# Formal checks for udp_packet_filter_formal.sv. Run from this directory:
+#   sby -f udp_packet_filter.sby
+#
+# prove: unbounded proof (IC3/PDR) that every assertion holds in every
+#        reachable state.
+# cover: traces showing the asserted situations are reachable, so the proof
+#        is not vacuous. Depth 64 covers reset, a 42-byte header, payload,
+#        and the descriptor handshake.
+[tasks]
+prove
+cover
+
+[options]
+prove: mode prove
+cover: mode cover
+cover: depth 64
+
+[engines]
+prove: abc pdr
+cover: smtbmc yices
+
+[script]
+read -formal -DSYNTHESIS stream_byte_buffer.sv udp_packet_filter.sv udp_packet_filter_formal.sv
+prep -top udp_packet_filter_formal
+
+[files]
+../rtl/stream_byte_buffer.sv
+../rtl/udp_packet_filter.sv
+../rtl/udp_packet_filter_reason_codes.svh
+udp_packet_filter_formal.sv

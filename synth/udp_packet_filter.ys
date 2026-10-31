@@ -1,5 +1,5 @@
 read_verilog -sv -Irtl -DSYNTHESIS rtl/stream_byte_buffer.sv rtl/udp_packet_filter.sv
 hierarchy -check -top udp_packet_filter
-synth -top udp_packet_filter
-check
-stat
+synth -flatten -top udp_packet_filter
+check -assert
+tee -q -o results/raw/generic_stat.json stat -json

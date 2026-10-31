@@ -83,9 +83,13 @@ def main() -> int:
     regression = load_json(RAW / "regression.json")
     lint = load_json(RESULTS / "lint_summary.json")
     synth = load_json(RESULTS / "synthesis_summary.json")
+    fpga = load_json(RESULTS / "fpga_summary.json")
+    formal = load_json(RESULTS / "formal_summary.json")
     require_pass(regression, "regression")
     require_pass(lint, "lint")
     require_pass(synth, "synthesis")
+    require_pass(fpga, "FPGA place and route")
+    require_pass(formal, "formal verification")
 
     tests = cocotb_tests(RAW / "cocotb_junit.xml")
     failed = [t for t in tests if t["result"] != "pass"]
@@ -247,6 +251,8 @@ def main() -> int:
         f"Icarus: {simulator}",
         f"Verilator: {lint['tool_version']}",
         f"Yosys: {synth['tool_version']}",
+        f"nextpnr-ecp5: {fpga['tool_versions']['nextpnr-ecp5']}",
+        f"SymbiYosys: {tool_version(['sby', '--version'])}",
     ])
     return 0
 

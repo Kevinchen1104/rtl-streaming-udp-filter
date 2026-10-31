@@ -6,3 +6,4 @@ sim_build/
 build/
 results/*.log
 results/raw/
+formal/udp_packet_filter*/

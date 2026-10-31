@@ -14,7 +14,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results"
 MANIFEST = RESULTS / "run_manifest.json"
-STEPS = ["run_regression.py", "run_lint.py", "run_synth.py", "generate_results.py"]
+STEPS = [
+    "run_regression.py",
+    "run_lint.py",
+    "run_synth.py",
+    "run_fpga.py",
+    "run_formal.py",
+    "generate_results.py",
+]
 EXCLUDED_PARTS = {
     ".git",
     ".venv",
@@ -23,6 +30,9 @@ EXCLUDED_PARTS = {
     "build",
     "results",
     "sim_build",
+    "udp_packet_filter",
+    "udp_packet_filter_prove",
+    "udp_packet_filter_cover",
 }
 
 

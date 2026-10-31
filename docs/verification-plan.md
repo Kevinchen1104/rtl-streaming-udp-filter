@@ -15,23 +15,33 @@
   assertions that run in every simulation. Synthesis and lint define
   `SYNTHESIS` and skip it; that is why Icarus warns that `$error` cannot be
   synthesized.
+- **Formal.** `formal/udp_packet_filter_formal.sv` restates the handshake and
+  frame-accounting properties for SymbiYosys. The only constraints on the
+  free inputs are: start in reset, and hold valid, data, and last while
+  stalled. `abc pdr` proves every assertion for all reachable states (not just
+  to a fixed depth), and a cover task shows each situation is reachable, so
+  the proof is not vacuous.
 
 ## What is checked where
 
 | Property | Checked by |
 |---|---|
-| Payload data, last, and error hold while the output is stalled | RTL checks; `run_frame` monitor |
+| Payload data, last, and error hold while the output is stalled | Formal proof; RTL checks; `run_frame` monitor |
 | A stalled payload beat is never dropped or overwritten | Same stability check plus the payload scoreboard |
-| Descriptor fields hold while the descriptor is stalled | RTL checks; `run_frame` monitor |
-| `result_accept` equals `result_reason == ACCEPT` | RTL checks; `run_frame` monitor |
-| No descriptor while payload from the frame is still pending | RTL checks; `run_frame` monitor |
+| Descriptor fields hold while the descriptor is stalled | Formal proof; RTL checks; `run_frame` monitor |
+| `result_accept` equals `result_reason == ACCEPT` | Formal proof; RTL checks; `run_frame` monitor |
+| No descriptor while payload from the frame is still pending | Formal proof; RTL checks; `run_frame` monitor |
+| At most one descriptor per closed frame; none without a closed frame | Formal proof |
+| No payload beat after a frame's last beat until its descriptor is taken | Formal proof |
+| `tuser_error` only on a last beat | Formal proof |
+| Handshake outputs low during reset | Formal proof; `reset_dut` |
 | Parser counters change only after an input handshake | `run_frame` monitor |
 | Exact payload bytes, order, and length; nothing for rejects | Scoreboard against the model |
 | Good payload ends with `last=1, error=0`; partial with `last=1, error=1` | Scoreboard |
 | Exactly one descriptor per closed frame, with the right sequence | Scoreboard; `back_to_back_frames` |
 | A reset-aborted frame leaves no descriptor and sequence restarts at 0 | `reset_mid_frame`, `reset_while_descriptor_stalled` |
 | Configuration is sampled once per frame | `configuration_latched_per_frame` |
-| A pending descriptor blocks the next frame | `flow_control` (`result_stall_blocks_next_frame`) |
+| A pending descriptor blocks the next frame | Formal proof; `flow_control` (`result_stall_blocks_next_frame`) |
 | Rejected frames drain even if the payload output is never ready | `reject_ignores_output_ready` |
 | `m_axis_tready` has no combinational path to `s_axis_tready` | `input_ready_is_registered` flips output ready mid-cycle |
 
@@ -70,7 +80,8 @@ the run, so an unreached bin cannot quietly drop out of the report.
 ## Reports
 
 `python scripts/run_all.py` runs the model tests, the RTL tests, lint,
-synthesis, and report generation, and stops at the first failure.
+generic synthesis, FPGA place and route, the formal tasks, and report
+generation, and stops at the first failure.
 `scripts/generate_results.py` builds `results/` from the JUnit reports and the
 JSON that tests write to `results/raw/` (not committed). The
 [verification matrix](../results/verification_matrix.md) lists every cocotb
