@@ -47,7 +47,13 @@ module udp_packet_filter #(
 
     state_t state;
     logic [5:0]  header_index;
-    logic [15:0] payload_received;
+    // Payload bytes still expected. Loaded at the last UDP header byte and
+    // counted down. payload_one and payload_many are payload_left == 1 and
+    // payload_left > 1, computed one cycle early to keep the 16-bit decode
+    // off the state-transition path.
+    logic [15:0] payload_left;
+    logic        payload_one;
+    logic        payload_many;
 
     logic [15:0] cfg_dst_port_q;
     logic        cfg_msg_type_enable_q;
@@ -57,6 +63,8 @@ module udp_packet_filter #(
     logic [15:0] ip_total_length;
     logic [13:0] fragment_field;
     logic [15:0] udp_length;
+    logic        lengths_ok;   // registered at byte 40, used at byte 41
+    logic        port_match;   // registered at byte 40, used at byte 41
     logic [23:0] address_shift;
     logic [3:0]  frame_reason;
     logic [31:0] sequence_counter;
@@ -67,6 +75,9 @@ module udp_packet_filter #(
     logic        buffer_s_last;
     logic        buffer_s_error;
     logic        buffer_drained;
+
+    // Compare total length with a constant instead of adding 14 at runtime.
+    localparam int unsigned MAX_IP_TOTAL_LENGTH = MAX_LOGICAL_FRAME_BYTES - 14;
 
     wire input_handshake = s_axis_tvalid && s_axis_tready;
 
@@ -108,20 +119,15 @@ module udp_packet_filter #(
                     s_axis_tready = buffer_s_ready;
                     buffer_s_valid = s_axis_tvalid &&
                                      (s_axis_tdata == cfg_msg_type_q);
-                    buffer_s_last = (result_payload_len == 16'd1) ||
-                                    s_axis_tlast;
-                    buffer_s_error = s_axis_tlast &&
-                                     (result_payload_len > 16'd1);
+                    buffer_s_last = payload_one || s_axis_tlast;
+                    buffer_s_error = s_axis_tlast && payload_many;
                 end
 
                 ST_PASS_PAYLOAD: begin
                     s_axis_tready = buffer_s_ready;
                     buffer_s_valid = s_axis_tvalid;
-                    buffer_s_last = ((payload_received + 16'd1)
-                                     == result_payload_len) || s_axis_tlast;
-                    buffer_s_error = s_axis_tlast &&
-                                     ((payload_received + 16'd1)
-                                      < result_payload_len);
+                    buffer_s_last = payload_one || s_axis_tlast;
+                    buffer_s_error = s_axis_tlast && payload_many;
                 end
 
                 default: s_axis_tready = 1'b0;
@@ -140,19 +146,32 @@ module udp_packet_filter #(
         end
     endtask
 
-    // A frame that closes before its declared datagram end is truncated,
-    // whatever reason was pending. received counts payload bytes including
-    // the closing byte. Eligibility rejects never set result_payload_len, so
-    // they keep their reason.
-    function automatic logic [3:0] close_reason(
-        input logic [3:0]  pending_reason,
-        input logic [15:0] received
-    );
-        if (received < result_payload_len)
+    // Reason for a frame whose last byte is transferring now. If payload is
+    // still expected after this byte, the frame is truncated, whatever reason
+    // was pending. Eligibility rejects leave payload_left at zero, so they
+    // keep their reason.
+    function automatic logic [3:0] close_reason(input logic [3:0] pending_reason);
+        if (payload_many)
             close_reason = REASON_BAD_LENGTH_OR_TRUNCATED;
         else
             close_reason = pending_reason;
     endfunction
+
+    task automatic load_payload_count(input logic [15:0] count);
+        begin
+            payload_left <= count;
+            payload_one  <= (count == 16'd1);
+            payload_many <= (count > 16'd1);
+        end
+    endtask
+
+    // Count one payload byte, stopping at zero.
+    task automatic count_payload_byte;
+        begin
+            if (payload_left != 16'd0)
+                load_payload_count(payload_left - 16'd1);
+        end
+    endtask
 
     task automatic close_or_wait(input logic [3:0] final_reason);
         begin
@@ -168,7 +187,11 @@ module udp_packet_filter #(
         if (!rst_n) begin
             state                   <= ST_IDLE;
             header_index            <= 6'd0;
-            payload_received        <= 16'd0;
+            payload_left            <= 16'd0;
+            payload_one             <= 1'b0;
+            payload_many            <= 1'b0;
+            lengths_ok              <= 1'b0;
+            port_match              <= 1'b0;
             cfg_dst_port_q          <= 16'd0;
             cfg_msg_type_enable_q   <= 1'b0;
             cfg_msg_type_q          <= 8'd0;
@@ -204,7 +227,7 @@ module udp_packet_filter #(
                         result_accept         <= 1'b0;
                         frame_reason          <= REASON_ACCEPT;
                         header_index          <= 6'd1;
-                        payload_received      <= 16'd0;
+                        load_payload_count(16'd0);
                         address_shift         <= 24'd0;
                         if (s_axis_tlast)
                             create_descriptor(REASON_BAD_LENGTH_OR_TRUNCATED);
@@ -262,8 +285,7 @@ module udp_packet_filter #(
                             6'd16: field_hi <= s_axis_tdata;
                             6'd17: begin
                                 ip_total_length <= {field_hi, s_axis_tdata};
-                                if ((32'd14 + {16'd0, field_hi, s_axis_tdata})
-                                    > MAX_LOGICAL_FRAME_BYTES) begin
+                                if ({16'd0, field_hi, s_axis_tdata} > MAX_IP_TOTAL_LENGTH) begin
                                     if (s_axis_tlast)
                                         create_descriptor(REASON_FRAME_TOO_LONG);
                                     else begin
@@ -336,10 +358,14 @@ module udp_packet_filter #(
                             6'd37: result_dst_port <= {field_hi, s_axis_tdata};
                             6'd38: field_hi <= s_axis_tdata;
                             6'd39: udp_length <= {field_hi, s_axis_tdata};
+                            6'd40: begin
+                                lengths_ok <= (ip_total_length >= 16'd28) &&
+                                              (udp_length >= 16'd8) &&
+                                              (udp_length == ip_total_length - 16'd20);
+                                port_match <= (result_dst_port == cfg_dst_port_q);
+                            end
                             6'd41: begin
-                                if (ip_total_length < 16'd28 ||
-                                    udp_length < 16'd8 ||
-                                    udp_length != (ip_total_length - 16'd20)) begin
+                                if (!lengths_ok) begin
                                     if (s_axis_tlast)
                                         create_descriptor(
                                             REASON_BAD_LENGTH_OR_TRUNCATED);
@@ -350,10 +376,11 @@ module udp_packet_filter #(
                                     end
                                 end else begin
                                     result_payload_len <= udp_length - 16'd8;
+                                    load_payload_count(udp_length - 16'd8);
                                     if ((udp_length > 16'd8) && s_axis_tlast) begin
                                         create_descriptor(
                                             REASON_BAD_LENGTH_OR_TRUNCATED);
-                                    end else if (result_dst_port != cfg_dst_port_q) begin
+                                    end else if (!port_match) begin
                                         if (s_axis_tlast)
                                             create_descriptor(
                                                 REASON_DST_PORT_MISMATCH);
@@ -391,20 +418,20 @@ module udp_packet_filter #(
 
                 ST_FIRST_PAYLOAD: begin
                     if (input_handshake) begin
-                        payload_received <= 16'd1;
+                        count_payload_byte();
                         if (s_axis_tdata != cfg_msg_type_q) begin
                             // Mismatch: nothing was written to the buffer.
                             if (s_axis_tlast)
                                 create_descriptor(close_reason(
-                                    REASON_MSG_TYPE_MISMATCH, 16'd1));
+                                    REASON_MSG_TYPE_MISMATCH));
                             else begin
                                 frame_reason <= REASON_MSG_TYPE_MISMATCH;
                                 state <= ST_DRAIN;
                             end
                         end else if (s_axis_tlast) begin
-                            frame_reason <= close_reason(REASON_ACCEPT, 16'd1);
+                            frame_reason <= close_reason(REASON_ACCEPT);
                             state <= ST_WAIT_OUTPUT;
-                        end else if (result_payload_len == 16'd1) begin
+                        end else if (payload_one) begin
                             frame_reason <= REASON_ACCEPT;
                             state <= ST_DRAIN;
                         end else begin
@@ -415,13 +442,11 @@ module udp_packet_filter #(
 
                 ST_PASS_PAYLOAD: begin
                     if (input_handshake) begin
-                        payload_received <= payload_received + 16'd1;
+                        count_payload_byte();
                         if (s_axis_tlast) begin
-                            frame_reason <= close_reason(
-                                REASON_ACCEPT, payload_received + 16'd1);
+                            frame_reason <= close_reason(REASON_ACCEPT);
                             state <= ST_WAIT_OUTPUT;
-                        end else if ((payload_received + 16'd1)
-                                     == result_payload_len) begin
+                        end else if (payload_one) begin
                             frame_reason <= REASON_ACCEPT;
                             state <= ST_DRAIN;
                         end
@@ -432,11 +457,9 @@ module udp_packet_filter #(
                     if (input_handshake) begin
                         // Keep counting a filter-rejected datagram so a late
                         // close is still reported as truncation.
-                        if (payload_received != result_payload_len)
-                            payload_received <= payload_received + 16'd1;
+                        count_payload_byte();
                         if (s_axis_tlast)
-                            close_or_wait(close_reason(
-                                frame_reason, payload_received + 16'd1));
+                            close_or_wait(close_reason(frame_reason));
                     end
                 end
 
@@ -458,7 +481,17 @@ module udp_packet_filter #(
     end
 
 `ifndef SYNTHESIS
-    // Simulation-only checks. MAX_LOGICAL_FRAME_BYTES is a policy limit, not
+    // Simulation-only checks.
+    always_ff @(posedge clk) begin
+        if (rst_n) begin
+            assert (payload_one == (payload_left == 16'd1))
+                else $error("payload_one does not match payload_left");
+            assert (payload_many == (payload_left > 16'd1))
+                else $error("payload_many does not match payload_left");
+        end
+    end
+
+    // MAX_LOGICAL_FRAME_BYTES is a policy limit, not
     // a buffer size; below the header size every frame would be too long.
     initial begin
         // 42 = Ethernet (14) + IPv4 without options (20) + UDP (8).

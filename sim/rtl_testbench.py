@@ -169,7 +169,7 @@ async def run_frame(
     metrics = RunMetrics()
     prior_output_stall = None
     prior_result_stall = None
-    prior_counters = (value(dut.header_index), value(dut.payload_received))
+    prior_counters = (value(dut.header_index), value(dut.payload_left))
     prior_input_handshake = False
 
     dut.cfg_dst_port.value = PORT
@@ -222,7 +222,7 @@ async def run_frame(
         res_valid = bool(value(dut.result_valid))
         res_hs = bool(res_valid and value(dut.result_ready))
 
-        current_counters = (value(dut.header_index), value(dut.payload_received))
+        current_counters = (value(dut.header_index), value(dut.payload_left))
         if current_counters != prior_counters:
             assert prior_input_handshake, "parser counters changed without input handshake"
         prior_counters = current_counters

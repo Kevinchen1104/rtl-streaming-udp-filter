@@ -63,15 +63,19 @@ The parser evaluates each check as soon as its field completes:
   byte 17. A failure moves to drain with that reason.
 - Fragmentation is latched at byte 21 and evaluated together with protocol at
   byte 23, so `NON_UDP` takes priority over `FRAGMENTED`.
-- Length rules and the destination port are evaluated at byte 41, the last
-  UDP header byte.
+- Length rules and the destination-port match are computed at byte 40 into
+  `lengths_ok` and `port_match`, and acted on at byte 41, the last UDP header
+  byte. Computing them a byte early keeps the 16-bit compares off the
+  state-transition path.
 
-Eligibility rejects leave `result_payload_len` at zero. After byte 41, the
-parser counts payload bytes in every state, including drain after a port or
-message reject. When `tlast` arrives, a count below the declared payload length
-turns the pending reason into `BAD_LENGTH_OR_TRUNCATED` (the `close_reason`
-function). This makes the result match the whole-frame priority order in the
-specification without special same-byte cases.
+At byte 41 the parser loads `payload_left` with the declared payload length
+and counts it down on every payload byte, including while draining a port or
+message reject. Eligibility rejects leave it at zero. `payload_one` and
+`payload_many` (`payload_left == 1` and `> 1`) are registered alongside the
+counter. When `tlast` arrives with `payload_many` set, the pending reason
+becomes `BAD_LENGTH_OR_TRUNCATED` (the `close_reason` function). This matches
+the whole-frame priority order in the specification without special same-byte
+cases.
 
 ## Payload and backpressure
 
