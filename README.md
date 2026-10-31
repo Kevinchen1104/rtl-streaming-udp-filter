@@ -24,7 +24,7 @@ per completed frame.
 ```text
 ready/valid input -> Ethernet -> IPv4 -> UDP/length -> filters
                                                         |
-                                             one-entry elastic buffer
+                                              two-entry skid buffer
                                                         |
                                              speculative payload output
                                                         |

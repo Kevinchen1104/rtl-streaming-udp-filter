@@ -66,6 +66,7 @@ module udp_packet_filter #(
     logic        buffer_s_ready;
     logic        buffer_s_last;
     logic        buffer_s_error;
+    logic        buffer_drained;
 
     wire input_handshake = s_axis_tvalid && s_axis_tready;
 
@@ -83,7 +84,8 @@ module udp_packet_filter #(
         .m_valid (m_axis_tvalid),
         .m_ready (m_axis_tready),
         .m_last  (m_axis_tlast),
-        .m_error (m_axis_tuser_error)
+        .m_error (m_axis_tuser_error),
+        .drained (buffer_drained)
     );
 
     always_comb begin
@@ -101,17 +103,15 @@ module udp_packet_filter #(
                 ST_DRAIN: s_axis_tready = 1'b1;
 
                 ST_FIRST_PAYLOAD: begin
-                    if (!cfg_msg_type_enable_q ||
-                        s_axis_tdata == cfg_msg_type_q) begin
-                        s_axis_tready = buffer_s_ready;
-                        buffer_s_valid = s_axis_tvalid;
-                        buffer_s_last = (result_payload_len == 16'd1) ||
-                                        s_axis_tlast;
-                        buffer_s_error = s_axis_tlast &&
-                                         (result_payload_len > 16'd1);
-                    end else begin
-                        s_axis_tready = 1'b1;
-                    end
+                    // Ready never depends on data: a mismatching first byte
+                    // is accepted and simply not written to the buffer.
+                    s_axis_tready = buffer_s_ready;
+                    buffer_s_valid = s_axis_tvalid &&
+                                     (s_axis_tdata == cfg_msg_type_q);
+                    buffer_s_last = (result_payload_len == 16'd1) ||
+                                    s_axis_tlast;
+                    buffer_s_error = s_axis_tlast &&
+                                     (result_payload_len > 16'd1);
                 end
 
                 ST_PASS_PAYLOAD: begin
@@ -143,7 +143,7 @@ module udp_packet_filter #(
     task automatic close_or_wait(input logic [3:0] final_reason);
         begin
             frame_reason <= final_reason;
-            if (!m_axis_tvalid || m_axis_tready)
+            if (buffer_drained)
                 create_descriptor(final_reason);
             else
                 state <= ST_WAIT_OUTPUT;
@@ -433,7 +433,7 @@ module udp_packet_filter #(
                 end
 
                 ST_WAIT_OUTPUT: begin
-                    if (!m_axis_tvalid || m_axis_tready)
+                    if (buffer_drained)
                         create_descriptor(frame_reason);
                 end
 

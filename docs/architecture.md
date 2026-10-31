@@ -76,14 +76,16 @@ the latched fragmentation reject.
 
 ## Payload and backpressure
 
-The registered one-entry buffer uses `out_can_take = !m_axis_tvalid ||
-m_axis_tready`. In a pass state, input ready follows this capacity; header and
-drain states do not depend on output ready. Stable registered data, last, and
-error fields are held whenever output is valid and stalled.
+Payload goes through a two-entry skid buffer (`stream_byte_buffer`). In a
+payload state, input ready is `!skid_valid`, a flop output, so downstream
+ready never reaches upstream ready combinationally. Header and drain states do
+not depend on output ready. Data, last, and error are held whenever output is
+valid and stalled.
 
-With message filtering enabled, the first payload byte is accepted into the
-same registered output buffer only when it matches. A mismatch is discarded.
-When disabled, the first payload byte follows the ordinary pass path.
+With message filtering enabled, input ready in the first-payload state still
+comes only from the buffer. The first byte is written to the buffer only when
+it matches; a mismatching byte is accepted and dropped. When filtering is
+disabled, the first payload byte follows the ordinary pass path.
 
 If `tlast` closes the frame on an emitted byte before the declared payload end,
 that byte is marked last and error. Bytes already emitted remain speculative;

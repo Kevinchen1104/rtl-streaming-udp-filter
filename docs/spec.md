@@ -245,20 +245,14 @@ input not-ready until that beat handshakes, then creates the descriptor.
 No timeout exists. A frame that never transfers `tlast` leaves the parser in its
 current transaction.
 
-## 7. Elastic output buffer
+## 7. Output skid buffer
 
-The one-entry registered buffer uses:
+Payload passes through a two-entry skid buffer: an output register plus one
+skid register. In payload states, input ready is high whenever the skid
+register is empty. It comes from a flop, so `m_axis_tready` has no
+combinational path to `s_axis_tready`. A stalled entry is never overwritten.
 
-```text
-out_can_take = !m_axis_tvalid || m_axis_tready
-```
-
-Payload input ready follows this capacity. A simultaneous output handshake and
-new input handshake replaces the transferred byte without inserting a bubble.
-A stalled valid entry is never overwritten.
-
-Header and drain paths do not depend on output ready when no payload entry is
-pending.
+Header and drain states keep input ready high regardless of the output.
 
 ## 8. Performance contract
 
