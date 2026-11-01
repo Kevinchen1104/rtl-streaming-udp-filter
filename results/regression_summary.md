@@ -2,6 +2,7 @@
 
 - Reference-model tests (pytest): 84, all passed
 - RTL tests (cocotb on Icarus Verilog): 59, all passed
+- Hardware-test harness (cocotb, fast UART): 3 tests, all passed
 - Randomized frames: 800 (seeds 1, 7, 42, 2027)
 - Functional coverage: all 39 bins reached their goal (at least 5 hits each)
 

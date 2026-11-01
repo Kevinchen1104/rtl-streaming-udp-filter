@@ -16,6 +16,7 @@
     "reset_while_descriptor_stalled": 1,
     "randomized_regression": 4
   },
+  "hw_harness_tests": 3,
   "randomized_frames": 800,
   "seeds": [
     1,

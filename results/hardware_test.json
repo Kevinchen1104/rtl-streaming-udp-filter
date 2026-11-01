@@ -1,0 +1,56 @@
+{
+  "status": "pass",
+  "date_utc": "2026-11-01T05:43:16+00:00",
+  "commit_sha": "ed73898698a70b2946d033df4b1ab427fe443b75",
+  "source_dirty": false,
+  "board": "Digilent Basys 3",
+  "part": "xc7a35tcpg236-1",
+  "filter_clock_mhz": 125,
+  "uart_baud": 1000000,
+  "serial_port": "COM3",
+  "build": {
+    "vivado_version": "2026.1",
+    "part": "xc7a35tcpg236-1",
+    "wns_ns": 1.254,
+    "whs_ns": 0.063,
+    "utilization": {
+      "Slice LUTs": 688,
+      "LUT as Logic": 675,
+      "Slice Registers": 736,
+      "CARRY4": 56,
+      "Slice": 263,
+      "F7 Muxes": 0,
+      "Block RAM Tile": 1,
+      "DSPs": 0
+    }
+  },
+  "tests": {
+    "frames": 2110,
+    "mismatches": 0,
+    "groups": {
+      "directed": 68,
+      "header_truncation_sweep": 42,
+      "random_seed_1": 500,
+      "random_seed_7": 500,
+      "random_seed_42": 500,
+      "random_seed_2027": 500
+    },
+    "reasons": {
+      "ACCEPT": 717,
+      "BAD_IPV4_HEADER": 104,
+      "BAD_LENGTH_OR_TRUNCATED": 578,
+      "DST_PORT_MISMATCH": 179,
+      "FRAGMENTED": 109,
+      "FRAME_TOO_LONG": 88,
+      "MSG_TYPE_MISMATCH": 142,
+      "NON_IPV4": 104,
+      "NON_UDP": 89
+    },
+    "frames_with_output_stalls": 1211,
+    "payload_beats_checked": 79048,
+    "bytes_sent": 284610,
+    "bytes_received": 202406,
+    "seconds": 4.5,
+    "failures": []
+  }
+}

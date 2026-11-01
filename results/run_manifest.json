@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "status": "pass",
-  "started_utc": "2026-11-01T02:56:41.285120+00:00",
-  "finished_utc": "2026-11-01T02:59:13.997863+00:00",
-  "commit_sha": "f99574477387a9cbbac1bbbd9353757a514fc1c3",
-  "source_tree_sha256": "97eb37b7d92356e87ecf3f741b52d30ee5b347def05075c7df41c8b3b191d6ca",
-  "source_file_count": 39,
+  "started_utc": "2026-11-01T05:38:52.593721+00:00",
+  "finished_utc": "2026-11-01T05:41:26.820061+00:00",
+  "commit_sha": "ed73898698a70b2946d033df4b1ab427fe443b75",
+  "source_tree_sha256": "7c7ab89adac2f2b15cad2a1c98ceb7afc5417b2c69dc7312c3dc790db33de447",
+  "source_file_count": 57,
   "source_dirty": false,
   "github_run_id": null,
   "github_sha": null,
@@ -17,7 +17,7 @@
         "scripts/run_regression.py"
       ],
       "exit_status": 0,
-      "duration_seconds": 30.875
+      "duration_seconds": 42.884
     },
     {
       "name": "run_lint.py",
@@ -26,7 +26,7 @@
         "scripts/run_lint.py"
       ],
       "exit_status": 0,
-      "duration_seconds": 0.657
+      "duration_seconds": 0.778
     },
     {
       "name": "run_synth.py",
@@ -35,7 +35,7 @@
         "scripts/run_synth.py"
       ],
       "exit_status": 0,
-      "duration_seconds": 1.852
+      "duration_seconds": 1.577
     },
     {
       "name": "run_fpga.py",
@@ -44,7 +44,7 @@
         "scripts/run_fpga.py"
       ],
       "exit_status": 0,
-      "duration_seconds": 46.333
+      "duration_seconds": 36.498
     },
     {
       "name": "run_formal.py",
@@ -53,7 +53,7 @@
         "scripts/run_formal.py"
       ],
       "exit_status": 0,
-      "duration_seconds": 72.51
+      "duration_seconds": 72.045
     },
     {
       "name": "generate_results.py",
@@ -62,7 +62,7 @@
         "scripts/generate_results.py"
       ],
       "exit_status": 0,
-      "duration_seconds": 0.494
+      "duration_seconds": 0.457
     }
   ]
 }

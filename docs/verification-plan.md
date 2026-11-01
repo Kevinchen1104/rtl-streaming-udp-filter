@@ -21,6 +21,11 @@
   stalled. `abc pdr` proves every assertion for all reachable states (not just
   to a fixed depth), and a cover task shows each situation is reachable, so
   the proof is not vacuous.
+- **Hardware.** The filter runs on a Basys 3 at 125 MHz. A PC sends the
+  simulation's directed, truncation-sweep, and random frames over USB-UART and
+  checks every payload byte and result record against the same model. The
+  harness itself has a cocotb test (`sim/hw_wrapper_testbench.py`, three tests)
+  in the regular regression. See [hardware-test.md](hardware-test.md).
 
 ## What is checked where
 

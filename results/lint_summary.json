@@ -1,16 +1,35 @@
 {
   "status": "pass",
-  "command": [
-    "verilator",
-    "--lint-only",
-    "--Wall",
-    "--Wno-fatal",
-    "-DSYNTHESIS",
-    "-Irtl",
-    "--top-module",
-    "udp_packet_filter",
-    "rtl/stream_byte_buffer.sv",
-    "rtl/udp_packet_filter.sv"
+  "commands": [
+    [
+      "verilator",
+      "--lint-only",
+      "--Wall",
+      "--Wno-fatal",
+      "-DSYNTHESIS",
+      "-Irtl",
+      "--top-module",
+      "udp_packet_filter",
+      "rtl/stream_byte_buffer.sv",
+      "rtl/udp_packet_filter.sv"
+    ],
+    [
+      "verilator",
+      "--lint-only",
+      "--Wall",
+      "--Wno-fatal",
+      "-DSYNTHESIS",
+      "-Irtl",
+      "--top-module",
+      "hw_test_core",
+      "rtl/stream_byte_buffer.sv",
+      "rtl/udp_packet_filter.sv",
+      "fpga/basys3/uart_rx.sv",
+      "fpga/basys3/uart_tx.sv",
+      "fpga/basys3/sync_fifo.sv",
+      "fpga/basys3/bram_fifo.sv",
+      "fpga/basys3/hw_test_core.sv"
+    ]
   ],
   "exit_status": 0,
   "tool_exit_status": 0,

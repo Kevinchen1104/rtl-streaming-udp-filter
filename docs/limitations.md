@@ -21,5 +21,9 @@ in front of the block handles those.
 
 **Implementation numbers.** ECP5 timing comes from nextpnr out of context, so
 it covers register-to-register paths, not I/O. The Vivado results for the
-Basys 3 are also out of context and are rerun by hand, not in CI. The design
-has not been run on hardware.
+Basys 3 are also out of context and are rerun by hand, not in CI.
+
+**Hardware test.** The design has run on a Basys 3 at 125 MHz, but frames
+arrive over a USB-UART at about 100 KB/s. That checks correctness on real
+silicon, not 1 Gb/s end to end, and there is no Ethernet PHY or MAC on the
+board.

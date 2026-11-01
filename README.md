@@ -22,6 +22,7 @@ before any further processing.
 | FPGA | Lattice ECP5-25F: 1,019 logic cells, 346 FFs, 126-132 MHz across 5 placement seeds (125 MHz = 1 Gb/s) |
 | | Basys 3 (Artix-7 XC7A35T), Vivado: 327 LUTs, 341 FFs, meets 125 MHz with 2.3 ns of slack |
 | Verification | Python reference model; 59 cocotb tests including 800 random frames; formal proof of the handshake properties |
+| Hardware | Runs on a Basys 3 at 125 MHz: 2,110 frames sent over USB-UART, every byte matched the model |
 
 ## How it works
 
@@ -105,12 +106,18 @@ Everything else is listed in the [specification](docs/spec.md) and
   holds, that a result record appears only for a frame that has ended and only
   after its payload is out, and that a pending record blocks the next frame.
 - **Lint.** Verilator `--Wall` with no warnings.
+- **Hardware.** On a Basys 3 the filter runs at 125 MHz behind a UART test
+  harness. The PC sends the same directed, truncation-sweep, and random frames
+  as the simulation (2,110 frames, 1,211 of them with random output stalls), and
+  every payload byte and result record matched the model. See
+  [hardware test](docs/hardware-test.md).
 
 Reports: [regression](results/regression_summary.md),
 [verification matrix](results/verification_matrix.md),
 [coverage](results/functional_coverage.md),
 [latency](results/latency_metrics.md), [FPGA](results/fpga_summary.md),
-[formal](results/formal_summary.md), [Vivado](results/vivado_summary.md). How each property is checked:
+[formal](results/formal_summary.md), [Vivado](results/vivado_summary.md),
+[hardware](results/hardware_test.md). How each property is checked:
 [verification plan](docs/verification-plan.md).
 
 ## Running it
@@ -132,6 +139,10 @@ With Vivado installed, `python scripts/run_vivado.py` reruns the Basys 3
 implementation (about 3 minutes) and updates `results/vivado_summary.md`.
 CI cannot run Vivado, so that report is only updated this way.
 
+With a Basys 3 on USB, `python scripts/run_hardware_test.py` builds the test
+bitstream, loads it, and runs the hardware test (about 10 minutes, mostly the
+build; needs `pip install -r requirements-hw.txt`).
+
 ## Repository layout
 
 | Path | Contents |
@@ -139,6 +150,7 @@ CI cannot run Vivado, so that report is only updated this way.
 | `rtl/` | The design |
 | `sim/` | Reference model, packet builder, cocotb tests, coverage bins |
 | `formal/` | SymbiYosys properties and job file |
+| `fpga/basys3/` | Hardware test harness for the Basys 3 (UART, FIFOs, MMCM, constraints) |
 | `synth/` | Generic Yosys synthesis script |
 | `scripts/` | `run_all.py` and the steps it runs |
 | `docs/` | Specification, architecture, verification plan, limitations |
