@@ -14,7 +14,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results"
 MANIFEST = RESULTS / "run_manifest.json"
-KEEP_RESULTS = {"vivado_summary.json", "vivado_summary.md"}
+KEEP_RESULTS = {
+    "vivado_summary.json", "vivado_summary.md",
+    "hardware_test.json", "hardware_test.md",
+}
 STEPS = [
     "run_regression.py",
     "run_lint.py",

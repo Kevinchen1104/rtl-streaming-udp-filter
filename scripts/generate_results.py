@@ -136,6 +136,7 @@ def main() -> int:
         "reference_model_tests": regression["reference_model_tests"],
         "cocotb_tests": len(tests),
         "cocotb_tests_by_group": dict(groups),
+        "hw_harness_tests": regression["hw_harness_tests"],
         "randomized_frames": random_frames,
         "seeds": seeds,
         "coverage_bins": bin_count,
@@ -148,6 +149,8 @@ def main() -> int:
         "",
         f"- Reference-model tests (pytest): {summary['reference_model_tests']}, all passed",
         f"- RTL tests (cocotb on Icarus Verilog): {len(tests)}, all passed",
+        f"- Hardware-test harness (cocotb, fast UART): {regression['hw_harness_tests']} "
+        "tests, all passed",
         f"- Randomized frames: {random_frames} (seeds {', '.join(map(str, seeds))})",
         f"- Functional coverage: all {bin_count} bins reached their goal "
         f"(at least {coverage.MIN_HITS} hits each)",

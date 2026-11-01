@@ -84,11 +84,28 @@ def main() -> int:
                       "failed_tests": failed})
         return 1
 
+    harness_xml = ROOT / "build" / f"cocotb-hw-{simulator}" / "test_hw_wrapper.result.xml"
+    harness_xml.unlink(missing_ok=True)
+    harness_status = run_pytest("Hardware-test harness", ["sim/test_hw_wrapper.py"],
+                                "hw_harness_junit.xml")
+    if not harness_xml.is_file():
+        write_status({"status": "fail", "failed_stage": "hw_harness",
+                      "detail": "cocotb produced no results file"})
+        return 1
+    shutil.copyfile(harness_xml, RAW / "hw_harness_cocotb_junit.xml")
+    harness_results = junit_results(RAW / "hw_harness_cocotb_junit.xml")
+    harness_failed = [name for name, status in harness_results if status != "pass"]
+    if harness_status or harness_failed or not harness_results:
+        write_status({"status": "fail", "failed_stage": "hw_harness",
+                      "failed_tests": harness_failed})
+        return 1
+
     write_status({
         "status": "pass",
         "simulator": simulator,
         "reference_model_tests": len(model_results),
         "cocotb_tests": len(rtl_results),
+        "hw_harness_tests": len(harness_results),
     })
     return 0
 

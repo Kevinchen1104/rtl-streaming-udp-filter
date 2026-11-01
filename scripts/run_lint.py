@@ -63,31 +63,39 @@ def main() -> int:
     if version_run.returncode or not version_lines:
         print("ERROR: unable to determine Verilator version", file=sys.stderr)
         return 2
-    arguments = [
-        "--lint-only", "--Wall", "--Wno-fatal", "-DSYNTHESIS",
-        "-Irtl",
-        "--top-module", "udp_packet_filter",
-        "rtl/stream_byte_buffer.sv",
-        "rtl/udp_packet_filter.sv",
-    ]
-    command = ["verilator", *arguments]
-    completed = run_verilator(executable, arguments)
-    output = completed.stdout + completed.stderr
+    filter_sources = ["rtl/stream_byte_buffer.sv", "rtl/udp_packet_filter.sv"]
+    targets = {
+        # The filter itself.
+        "udp_packet_filter": filter_sources,
+        # The Basys 3 test harness around it (the MMCM top is Vivado-only).
+        "hw_test_core": filter_sources + [
+            "fpga/basys3/uart_rx.sv", "fpga/basys3/uart_tx.sv",
+            "fpga/basys3/sync_fifo.sv", "fpga/basys3/bram_fifo.sv",
+            "fpga/basys3/hw_test_core.sv",
+        ],
+    }
+    commands: list[list[str]] = []
+    output = ""
+    tool_status = 0
+    for top, sources in targets.items():
+        arguments = ["--lint-only", "--Wall", "--Wno-fatal", "-DSYNTHESIS",
+                     "-Irtl", "--top-module", top, *sources]
+        commands.append(["verilator", *arguments])
+        completed = run_verilator(executable, arguments)
+        output += "$ " + " ".join(commands[-1]) + "\n" + completed.stdout + completed.stderr
+        tool_status = tool_status or completed.returncode
     warnings = [line for line in output.splitlines() if "%Warning" in line]
-    gate_status = completed.returncode or (1 if warnings else 0)
+    gate_status = tool_status or (1 if warnings else 0)
     summary = {
         "status": "pass" if gate_status == 0 else "fail",
-        "command": command,
+        "commands": commands,
         "exit_status": gate_status,
-        "tool_exit_status": completed.returncode,
+        "tool_exit_status": tool_status,
         "tool_version": version_lines[0],
         "warning_count": len(warnings),
         "warnings": warnings,
     }
-    (raw / "lint.log").write_text(
-        "$ " + " ".join(command) + "\n" + output,
-        encoding="utf-8", newline="\n",
-    )
+    (raw / "lint.log").write_text(output, encoding="utf-8", newline="\n")
     (ROOT / "results" / "lint_summary.json").write_text(
         json.dumps(summary, indent=2), encoding="utf-8", newline="\n"
     )
@@ -95,9 +103,11 @@ def main() -> int:
         "# Lint summary", "", f"- Status: `{summary['status']}`",
         f"- Tool: `{summary['tool_version']}`",
         f"- Gate exit status: `{gate_status}`",
-        f"- Tool exit status: `{completed.returncode}`",
+        f"- Tool exit status: `{tool_status}`",
         f"- Warnings: `{len(warnings)}`",
-        f"- Command: `{' '.join(command)}`", "",
+        "- Commands:",
+        *[f"  - `{' '.join(command)}`" for command in commands],
+        "",
     ]
     if warnings:
         md += ["## Warnings", ""] + [f"- `{warning}`" for warning in warnings]
