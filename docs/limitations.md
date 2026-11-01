@@ -20,6 +20,6 @@ frame until reset.
 in front of the block handles those.
 
 **Implementation numbers.** ECP5 timing comes from nextpnr out of context, so
-it covers register-to-register paths, not I/O. The Xilinx 7-series figures are
-a Yosys synthesis estimate, not Vivado results, and include no timing. The
-design has not been run on hardware.
+it covers register-to-register paths, not I/O. The Vivado results for the
+Basys 3 are also out of context and are rerun by hand, not in CI. The design
+has not been run on hardware.

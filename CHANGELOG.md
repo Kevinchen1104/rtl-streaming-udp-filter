@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Vivado out-of-context implementation for the Basys 3 (XC7A35T-1):
+  `scripts/run_vivado.py` and `synth/vivado_ooc.tcl`, run locally. 327 LUTs,
+  341 FFs, 125 MHz met with 2.3 ns of slack.
+
 ## 1.1.0
 
 Design

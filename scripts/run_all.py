@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results"
 MANIFEST = RESULTS / "run_manifest.json"
+KEEP_RESULTS = {"vivado_summary.json", "vivado_summary.md"}
 STEPS = [
     "run_regression.py",
     "run_lint.py",
@@ -81,9 +82,16 @@ def main() -> int:
     dirty_text = git_text("status", "--porcelain=v1")
     source_hash, source_file_count = source_tree_sha256()
 
-    if RESULTS.exists():
-        shutil.rmtree(RESULTS)
-    RESULTS.mkdir(parents=True)
+    # Clear old results, except the Vivado report, which only
+    # scripts/run_vivado.py (run by hand) can regenerate.
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    for path in RESULTS.iterdir():
+        if path.name in KEEP_RESULTS:
+            continue
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
 
     manifest: dict[str, object] = {
         "schema_version": 1,

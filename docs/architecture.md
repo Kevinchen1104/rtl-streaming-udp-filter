@@ -108,6 +108,9 @@ placement seed to 126 MHz, above the 125 MHz needed for 1 Gb/s at 8 bits:
 2. Compute the UDP length rules and the port match one byte early.
 3. Compare the IPv4 total length against a constant.
 
+On the Basys 3's Artix-7 (XC7A35T-1), Vivado meets 125 MHz with 2.3 ns of
+setup slack, roughly 175 MHz ([Vivado results](../results/vivado_summary.md)).
+
 ## Reset
 
 Reset is synchronous, but `s_axis_tready`, `m_axis_tvalid`, and

@@ -1,0 +1,30 @@
+{
+  "status": "pass",
+  "vivado_version": "2026.1",
+  "part": "xc7a35tcpg236-1",
+  "mode": "out of context (register to register)",
+  "clock_target_mhz": 125.0,
+  "wns_ns": 2.287,
+  "whs_ns": 0.151,
+  "estimated_fmax_mhz": 175.0,
+  "critical_path": {
+    "from": "field_hi_reg[1]/C",
+    "to": "FSM_sequential_state_reg[1]/CE",
+    "logic_levels": 5
+  },
+  "utilization": {
+    "Slice LUTs": 327,
+    "LUT as Logic": 327,
+    "Slice Registers": 341,
+    "CARRY4": 24,
+    "Slice": 136,
+    "F7 Muxes": 0,
+    "Block RAM Tile": 0,
+    "DSPs": 0
+  },
+  "utilization_percent": {
+    "Slice LUTs": 1.6,
+    "Slice Registers": 0.8,
+    "Slice": 1.7
+  }
+}

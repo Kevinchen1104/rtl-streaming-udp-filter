@@ -20,7 +20,7 @@ before any further processing.
 | Throughput | 1 byte per cycle; 1-2 idle input cycles between frames |
 | Latency | First payload byte out 1 cycle after it is accepted |
 | FPGA | Lattice ECP5-25F: 1,019 logic cells, 346 FFs, 126-132 MHz across 5 placement seeds (125 MHz = 1 Gb/s) |
-| | Xilinx Artix-7 estimate: 571 LUTs, 346 FFs (under 3% of a Basys 3) |
+| | Basys 3 (Artix-7 XC7A35T), Vivado: 327 LUTs, 341 FFs, meets 125 MHz with 2.3 ns of slack |
 | Verification | Python reference model; 59 cocotb tests including 800 random frames; formal proof of the handshake properties |
 
 ## How it works
@@ -110,7 +110,7 @@ Reports: [regression](results/regression_summary.md),
 [verification matrix](results/verification_matrix.md),
 [coverage](results/functional_coverage.md),
 [latency](results/latency_metrics.md), [FPGA](results/fpga_summary.md),
-[formal](results/formal_summary.md). How each property is checked:
+[formal](results/formal_summary.md), [Vivado](results/vivado_summary.md). How each property is checked:
 [verification plan](docs/verification-plan.md).
 
 ## Running it
@@ -127,6 +127,10 @@ python -m venv .venv
 
 On Windows, use `.venv\Scripts\python`. A full run takes about 3 minutes,
 stops at the first failure, and rewrites `results/`.
+
+With Vivado installed, `python scripts/run_vivado.py` reruns the Basys 3
+implementation (about 3 minutes) and updates `results/vivado_summary.md`.
+CI cannot run Vivado, so that report is only updated this way.
 
 ## Repository layout
 
